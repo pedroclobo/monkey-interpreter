@@ -1,4 +1,4 @@
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone, Hash, Eq)]
 pub enum Token {
 	ILLEGAL(String),
 
@@ -40,6 +40,8 @@ pub enum Token {
 	IF,
 	ELSE,
 	RETURN,
+
+	UNARY,
 }
 
 impl Token {
@@ -94,6 +96,7 @@ impl std::fmt::Display for Token {
 			Token::IF => write!(f, "tIF"),
 			Token::ELSE => write!(f, "tELSE"),
 			Token::RETURN => write!(f, "tRETURN"),
+			Token::UNARY => write!(f, "tUNARY"),
 		}
 	}
 }

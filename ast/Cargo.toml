@@ -1,0 +1,12 @@
+[package]
+name = "monkey-ast"
+version = "0.1.0"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[lib]
+name = "ast"
+path= "lib.rs"
+
+[dependencies]
+monkey-lexer = { path = "../lexer" }

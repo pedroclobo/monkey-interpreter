@@ -4,6 +4,7 @@ pub enum Symbol {
 	Boolean(Boolean),
 	StringLiteral(StringLiteral),
 	Null(Null),
+	ReturnValue(ReturnValue),
 }
 
 #[derive(Debug, PartialEq)]
@@ -24,6 +25,11 @@ pub struct StringLiteral {
 #[derive(Debug, PartialEq)]
 pub struct Null {}
 
+#[derive(Debug, PartialEq)]
+pub struct ReturnValue {
+	pub value: Box<Symbol>,
+}
+
 impl std::fmt::Display for Symbol {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 		match self {
@@ -31,6 +37,7 @@ impl std::fmt::Display for Symbol {
 			Symbol::Boolean(b) => write!(f, "{}", b.value),
 			Symbol::StringLiteral(s) => write!(f, "{}", s.value),
 			Symbol::Null(_) => write!(f, "NULL"),
+			Symbol::ReturnValue(s) => write!(f, "{}", s.value),
 		}
 	}
 }

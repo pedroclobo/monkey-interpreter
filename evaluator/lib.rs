@@ -9,13 +9,15 @@ use symbol::Symbol;
 
 pub fn eval(node: Node) -> Symbol {
 	match node {
-		Node::Program(p) => eval_statements(p.statements),
+		Node::Program(p) => eval_program(p.statements),
 		Node::Statement(stmt) => match stmt {
 			Statement::LetStatement(_) => todo!(),
-			Statement::ReturnStatement(_) => todo!(),
+			Statement::ReturnStatement(ret) => Symbol::ReturnValue(symbol::ReturnValue {
+				value: Box::new(eval(Node::Expression(ret.value))),
+			}),
 			Statement::ExpressionStatement(expr) => eval(Node::Expression(expr.expression)),
 		},
-		Node::BlockStatement(blk) => eval_statements(blk.statements),
+		Node::BlockStatement(blk) => eval_block(blk.statements),
 		Node::Expression(expr) => match expr {
 			Expression::Identifier(_) => todo!(),
 			Expression::IntegerLiteral(i) => Symbol::Integer(symbol::Integer { value: i.value }),
@@ -51,11 +53,31 @@ pub fn eval(node: Node) -> Symbol {
 	}
 }
 
-fn eval_statements(statements: Vec<Statement>) -> Symbol {
-	let mut result = Symbol::Integer(symbol::Integer { value: 0 });
+fn eval_program(statements: Vec<Statement>) -> Symbol {
+	let mut result = Symbol::Null(symbol::Null {});
 
 	for statement in statements {
 		result = eval(Node::Statement(statement));
+
+		match result {
+			Symbol::ReturnValue(ret) => return *ret.value,
+			_ => continue,
+		}
+	}
+
+	result
+}
+
+fn eval_block(statements: Vec<Statement>) -> Symbol {
+	let mut result = Symbol::Null(symbol::Null {});
+
+	for statement in statements {
+		result = eval(Node::Statement(statement));
+
+		match result {
+			Symbol::ReturnValue(_) => return result,
+			_ => continue,
+		}
 	}
 
 	result
@@ -285,6 +307,33 @@ mod tests {
 			Symbol::Null(symbol::Null {}),
 			Symbol::Integer(symbol::Integer { value: 10 }),
 			Symbol::Integer(symbol::Integer { value: 20 }),
+		];
+
+		test(&input, &expected);
+	}
+
+	#[test]
+	fn return_statements() {
+		let input = vec![
+			"return 10;",
+			"return 10; 9;",
+			"return 2 * 5; 9;",
+			"9; return 2 * 5; 9;",
+			r#"
+                if (10 > 1) {
+                    if (10 > 1) {
+                        return 10;
+                    }
+                    return 1;
+                }
+            "#,
+		];
+		let expected = vec![
+			Symbol::Integer(symbol::Integer { value: 10 }),
+			Symbol::Integer(symbol::Integer { value: 10 }),
+			Symbol::Integer(symbol::Integer { value: 10 }),
+			Symbol::Integer(symbol::Integer { value: 10 }),
+			Symbol::Integer(symbol::Integer { value: 10 }),
 		];
 
 		test(&input, &expected);

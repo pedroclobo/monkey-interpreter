@@ -5,6 +5,7 @@ use lexer::token::Token;
 pub enum Node {
 	Program(Program),
 	Statement(Statement),
+	BlockStatement(BlockStatement),
 	Expression(Expression),
 }
 
@@ -12,7 +13,6 @@ pub enum Statement {
 	LetStatement(LetStatement),
 	ReturnStatement(ReturnStatement),
 	ExpressionStatement(ExpressionStatement),
-	BlockStatement(BlockStatement),
 }
 
 pub enum Expression {
@@ -97,6 +97,7 @@ impl std::fmt::Display for Node {
 			Node::Program(p) => write!(f, "{}", p.to_string()),
 			Node::Statement(s) => write!(f, "{}", s.to_string()),
 			Node::Expression(e) => write!(f, "{}", e.to_string()),
+			Node::BlockStatement(b) => write!(f, "{}", b.to_string()),
 		}
 	}
 }
@@ -122,15 +123,6 @@ impl std::fmt::Display for Statement {
 			),
 			Statement::ReturnStatement(r) => write!(f, "tRETURN({})", r.value.to_string()),
 			Statement::ExpressionStatement(e) => write!(f, "{}", e.expression.to_string()),
-			Statement::BlockStatement(b) => write!(
-				f,
-				"{}",
-				b.statements
-					.iter()
-					.map(|statement| statement.to_string())
-					.collect::<Vec<String>>()
-					.join("")
-			),
 		}
 	}
 }
@@ -208,5 +200,19 @@ impl std::fmt::Display for Expression {
 					.join(", ")
 			),
 		}
+	}
+}
+
+impl std::fmt::Display for BlockStatement {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		write!(
+			f,
+			"{}",
+			self.statements
+				.iter()
+				.map(|statement| statement.to_string())
+				.collect::<Vec<String>>()
+				.join("")
+		)
 	}
 }

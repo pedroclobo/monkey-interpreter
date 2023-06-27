@@ -13,25 +13,39 @@ pub fn eval(node: Node) -> Symbol {
 		Node::Statement(stmt) => match stmt {
 			Statement::LetStatement(_) => todo!(),
 			Statement::ReturnStatement(_) => todo!(),
-			Statement::ExpressionStatement(expr) => eval(ast::Node::Expression(expr.expression)),
-			Statement::BlockStatement(_) => todo!(),
+			Statement::ExpressionStatement(expr) => eval(Node::Expression(expr.expression)),
 		},
+		Node::BlockStatement(blk) => eval_statements(blk.statements),
 		Node::Expression(expr) => match expr {
 			Expression::Identifier(_) => todo!(),
 			Expression::IntegerLiteral(i) => Symbol::Integer(symbol::Integer { value: i.value }),
 			Expression::Boolean(b) => Symbol::Boolean(symbol::Boolean { value: b.value }),
-			Expression::StringLiteral(_) => todo!(),
+			Expression::StringLiteral(s) => {
+				Symbol::StringLiteral(symbol::StringLiteral { value: s.value })
+			}
 			Expression::FunctionLiteral(_) => todo!(),
 			Expression::UnaryExpression(expr) => {
-				let right = eval(ast::Node::Expression(*expr.right));
+				let right = eval(Node::Expression(*expr.right));
 				eval_prefix_expression(expr.operator, right)
 			}
 			Expression::BinaryExpression(expr) => {
-				let left = eval(ast::Node::Expression(*expr.left));
-				let right = eval(ast::Node::Expression(*expr.right));
+				let left = eval(Node::Expression(*expr.left));
+				let right = eval(Node::Expression(*expr.right));
 				eval_infix_expression(expr.operator, left, right)
 			}
-			Expression::IfExpression(_) => todo!(),
+			Expression::IfExpression(expr) => {
+				let condition = eval(Node::Expression(*expr.condition));
+				match condition {
+					Symbol::Boolean(symbol::Boolean { value: true }) => {
+						eval(Node::BlockStatement(expr.consequence))
+					}
+					Symbol::Boolean(symbol::Boolean { value: false }) => match expr.alternative {
+						Some(alt) => eval(Node::BlockStatement(alt)),
+						None => Symbol::Null(symbol::Null {}),
+					},
+					_ => panic!("invalid condition"),
+				}
+			}
 			Expression::FunctionCall(_) => todo!(),
 		},
 	}
@@ -41,7 +55,7 @@ fn eval_statements(statements: Vec<Statement>) -> Symbol {
 	let mut result = Symbol::Integer(symbol::Integer { value: 0 });
 
 	for statement in statements {
-		result = eval(ast::Node::Statement(statement));
+		result = eval(Node::Statement(statement));
 	}
 
 	result
@@ -150,6 +164,7 @@ mod tests {
 	use eval;
 	use lexer::Lexer;
 	use parser::Parser;
+	use Node;
 	use Symbol;
 
 	fn test(input: &Vec<&str>, expected: &Vec<Symbol>) {
@@ -157,7 +172,7 @@ mod tests {
 			let mut lexer = Lexer::new(input[i]);
 			let mut parser = Parser::new(&mut lexer);
 			let program = parser.parse_program();
-			let eval = eval(ast::Node::Program(program));
+			let eval = eval(Node::Program(program));
 			assert_eq!(eval, *symbol);
 		}
 	}
@@ -179,6 +194,21 @@ mod tests {
 		let expected = vec![
 			Symbol::Boolean(symbol::Boolean { value: false }),
 			Symbol::Boolean(symbol::Boolean { value: true }),
+		];
+
+		test(&input, &expected);
+	}
+
+	#[test]
+	fn string_expressions() {
+		let input = vec!["\"hello\"", "\"world\""];
+		let expected = vec![
+			Symbol::StringLiteral(symbol::StringLiteral {
+				value: "hello".to_string(),
+			}),
+			Symbol::StringLiteral(symbol::StringLiteral {
+				value: "world".to_string(),
+			}),
 		];
 
 		test(&input, &expected);
@@ -237,6 +267,24 @@ mod tests {
 			Symbol::Boolean(symbol::Boolean { value: false }),
 			Symbol::Boolean(symbol::Boolean { value: true }),
 			Symbol::Boolean(symbol::Boolean { value: true }),
+		];
+
+		test(&input, &expected);
+	}
+
+	#[test]
+	fn conditional_expressions() {
+		let input = vec![
+			"if (true) { 10 };",
+			"if (false) { 10 };",
+			"if (true) { 10 } else { 20 };",
+			"if (false) { 10 } else { 20 };",
+		];
+		let expected = vec![
+			Symbol::Integer(symbol::Integer { value: 10 }),
+			Symbol::Null(symbol::Null {}),
+			Symbol::Integer(symbol::Integer { value: 10 }),
+			Symbol::Integer(symbol::Integer { value: 20 }),
 		];
 
 		test(&input, &expected);

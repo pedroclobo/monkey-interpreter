@@ -2,5 +2,7 @@
 members = [ 
 	"lexer",
 	"ast",
-	"parser"
+	"parser",
+	"symbol",
+	"evaluator"
 ]

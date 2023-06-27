@@ -10,6 +10,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "monkey-evaluator"
+version = "0.1.0"
+dependencies = [
+ "monkey-ast",
+ "monkey-lexer",
+ "monkey-parser",
+ "monkey-symbol",
+]
+
+[[package]]
 name = "monkey-lexer"
 version = "0.1.0"
 
@@ -19,4 +29,13 @@ version = "0.1.0"
 dependencies = [
  "monkey-ast",
  "monkey-lexer",
+]
+
+[[package]]
+name = "monkey-symbol"
+version = "0.1.0"
+dependencies = [
+ "monkey-ast",
+ "monkey-lexer",
+ "monkey-parser",
 ]

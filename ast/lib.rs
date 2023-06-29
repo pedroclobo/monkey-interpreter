@@ -2,6 +2,7 @@ extern crate lexer;
 
 use lexer::token::Token;
 
+#[derive(Clone)]
 pub enum Node {
 	Program(Program),
 	Statement(Statement),
@@ -9,12 +10,14 @@ pub enum Node {
 	Expression(Expression),
 }
 
+#[derive(Clone)]
 pub enum Statement {
 	LetStatement(LetStatement),
 	ReturnStatement(ReturnStatement),
 	ExpressionStatement(ExpressionStatement),
 }
 
+#[derive(Clone)]
 pub enum Expression {
 	Identifier(Identifier),
 	IntegerLiteral(IntegerLiteral),
@@ -27,65 +30,79 @@ pub enum Expression {
 	FunctionCall(FunctionCall),
 }
 
+#[derive(Clone)]
 pub struct Program {
 	pub statements: Vec<Statement>,
 }
 
+#[derive(Clone)]
 pub struct LetStatement {
 	pub identifier: Identifier,
 	pub value: Expression,
 }
 
+#[derive(Clone)]
 pub struct ReturnStatement {
 	pub value: Expression,
 }
 
+#[derive(Clone)]
 pub struct ExpressionStatement {
 	pub expression: Expression,
 }
 
+#[derive(Clone)]
 pub struct BlockStatement {
 	pub statements: Vec<Statement>,
 }
 
+#[derive(Clone)]
 pub struct Identifier {
 	pub value: String,
 }
 
+#[derive(Clone)]
 pub struct IntegerLiteral {
 	pub value: i32,
 }
 
+#[derive(Clone)]
 pub struct Boolean {
 	pub value: bool,
 }
 
+#[derive(Clone)]
 pub struct StringLiteral {
 	pub value: String,
 }
 
+#[derive(Clone)]
 pub struct FunctionLiteral {
 	pub parameters: Vec<Identifier>,
 	pub body: BlockStatement,
 }
 
+#[derive(Clone)]
 pub struct UnaryExpression {
 	pub operator: Token,
 	pub right: Box<Expression>,
 }
 
+#[derive(Clone)]
 pub struct BinaryExpression {
 	pub left: Box<Expression>,
 	pub operator: Token,
 	pub right: Box<Expression>,
 }
 
+#[derive(Clone)]
 pub struct IfExpression {
 	pub condition: Box<Expression>,
 	pub consequence: BlockStatement,
 	pub alternative: Option<BlockStatement>,
 }
 
+#[derive(Clone)]
 pub struct FunctionCall {
 	pub function: Box<Expression>,
 	pub arguments: Vec<Expression>,

@@ -1,9 +1,9 @@
 #[cfg(test)]
 mod tests {
-	use eval;
 	use lexer::Lexer;
 	use parser::Parser;
-	use Node;
+	use Environment;
+	use Evaluator;
 	use Symbol;
 
 	fn test(input: &Vec<&str>, expected: &Vec<Symbol>) {
@@ -20,8 +20,10 @@ mod tests {
 				Err(e) => panic!("{}", e),
 			};
 
-			let eval = eval(Node::Program(program));
-			assert_eq!(eval, *symbol);
+			let mut env = Environment::new();
+			let mut evaluator = Evaluator::new(ast::Node::Program(program), &mut env);
+
+			assert_eq!(evaluator.eval_program(), *symbol);
 		}
 	}
 
@@ -160,6 +162,24 @@ mod tests {
 			Symbol::Integer(symbol::Integer { value: 10 }),
 			Symbol::Integer(symbol::Integer { value: 10 }),
 			Symbol::Integer(symbol::Integer { value: 10 }),
+		];
+
+		test(&input, &expected);
+	}
+
+	#[test]
+	fn let_statements() {
+		let input = vec![
+			"let a = 5; a;",
+			"let a = 5 * 5; a;",
+			"let a = 5; let b = a; b;",
+			"let a = 5; let b = a; let c = a + b + 5; c;",
+		];
+		let expected = vec![
+			Symbol::Integer(symbol::Integer { value: 5 }),
+			Symbol::Integer(symbol::Integer { value: 25 }),
+			Symbol::Integer(symbol::Integer { value: 5 }),
+			Symbol::Integer(symbol::Integer { value: 15 }),
 		];
 
 		test(&input, &expected);

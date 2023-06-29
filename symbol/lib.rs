@@ -1,4 +1,6 @@
-#[derive(Debug, PartialEq)]
+pub mod environment;
+
+#[derive(Debug, PartialEq, Clone)]
 pub enum Symbol {
 	Integer(Integer),
 	Boolean(Boolean),
@@ -7,25 +9,25 @@ pub enum Symbol {
 	ReturnValue(ReturnValue),
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct Integer {
 	pub value: i32,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct Boolean {
 	pub value: bool,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct StringLiteral {
 	pub value: String,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct Null {}
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct ReturnValue {
 	pub value: Box<Symbol>,
 }

@@ -1,14 +1,18 @@
 extern crate evaluator;
 extern crate lexer;
 extern crate parser;
+extern crate symbol;
 
-use evaluator::eval;
+use evaluator::Evaluator;
 use lexer::Lexer;
 use parser::Parser;
+use symbol::environment::Environment;
 
 use std::io::Write;
 
 fn main() {
+	let mut env = Environment::new();
+
 	loop {
 		print!(">> ");
 		std::io::stdout().flush().unwrap();
@@ -38,9 +42,8 @@ fn main() {
 			}
 		};
 
-		let evaluator = eval(ast::Node::Program(program));
-
-		println!("{}", evaluator);
+		let mut evaluator = Evaluator::new(ast::Node::Program(program), &mut env);
+		println!("{}", evaluator.eval_program());
 		println!();
 	}
 }

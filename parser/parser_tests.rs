@@ -4,10 +4,17 @@ mod tests {
 	use Parser;
 
 	fn test(input: &str, expected: &Vec<&str>) {
-		let mut lexer = Lexer::new(input);
-		let mut parser = Parser::new(&mut lexer);
+		let mut lexer = Lexer::new(input, "test");
 
-		let program = parser.parse_program();
+		let mut parser = match Parser::new(&mut lexer) {
+			Ok(parser) => parser,
+			Err(e) => panic!("{}", e),
+		};
+
+		let program = match parser.parse_program() {
+			Ok(program) => program,
+			Err(e) => panic!("{}", e),
+		};
 
 		assert_eq!(program.statements.len(), expected.len());
 

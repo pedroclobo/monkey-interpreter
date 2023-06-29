@@ -3,7 +3,34 @@ use crate::token::Token;
 mod lexer_tests;
 pub mod token;
 
+#[derive(Debug, PartialEq, Clone)]
+pub enum LexerError {
+	InvalidToken(String, String, usize, usize),
+	InvalidInteger(String, String, usize, usize),
+}
+
+impl std::fmt::Display for LexerError {
+	fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+		match self {
+			LexerError::InvalidToken(lexeme, file, line, column) => write!(
+				f,
+				"{}:{}:{} - Invalid lexeme: {}",
+				file, line, column, lexeme
+			),
+			LexerError::InvalidInteger(lexeme, file, line, column) => write!(
+				f,
+				"{}:{}:{} - Invalid Integer: {}",
+				file, line, column, lexeme
+			),
+		}
+	}
+}
+
 pub struct Lexer<'a> {
+	pub file: &'a str,
+	pub line: usize,
+	pub column: usize,
+
 	input: &'a str,
 	position: usize,
 	read_position: usize,
@@ -11,9 +38,12 @@ pub struct Lexer<'a> {
 }
 
 impl<'a> Lexer<'a> {
-	pub fn new(input: &'a str) -> Self {
+	pub fn new(input: &'a str, file: &'a str) -> Self {
 		let mut lex = Lexer {
 			input,
+			file,
+			line: 0,
+			column: 0,
 			position: 0,
 			read_position: 0,
 			char: 0,
@@ -24,128 +54,144 @@ impl<'a> Lexer<'a> {
 		lex
 	}
 
-	pub fn next_token(&mut self) -> Token {
+	pub fn next_token(&mut self) -> Result<Token, LexerError> {
 		match self.char {
 			b'=' => {
 				if self.peek_char() == b'=' {
 					self.read_char();
 					self.read_char();
-					Token::EQ
+					Ok(Token::EQ)
 				} else {
 					self.read_char();
-					Token::ASSIGN
+					Ok(Token::ASSIGN)
 				}
 			}
 			b'!' => {
 				if self.peek_char() == b'=' {
 					self.read_char();
 					self.read_char();
-					Token::NE
+					Ok(Token::NE)
 				} else {
 					self.read_char();
-					Token::NOT
+					Ok(Token::NOT)
 				}
 			}
 
 			b'+' => {
 				self.read_char();
-				Token::PLUS
+				Ok(Token::PLUS)
 			}
 			b'-' => {
 				self.read_char();
-				Token::MINUS
+				Ok(Token::MINUS)
 			}
 			b'*' => {
 				self.read_char();
-				Token::MUL
+				Ok(Token::MUL)
 			}
 			b'/' => {
 				self.read_char();
-				Token::DIV
+				Ok(Token::DIV)
 			}
 			b'<' => {
 				if self.peek_char() == b'=' {
 					self.read_char();
 					self.read_char();
-					Token::LE
+					Ok(Token::LE)
 				} else {
 					self.read_char();
-					Token::LT
+					Ok(Token::LT)
 				}
 			}
 			b'>' => {
 				if self.peek_char() == b'=' {
 					self.read_char();
 					self.read_char();
-					Token::GE
+					Ok(Token::GE)
 				} else {
 					self.read_char();
-					Token::GT
+					Ok(Token::GT)
 				}
 			}
 			b'&' => match self.peek_char() {
 				b'&' => {
 					self.read_char();
 					self.read_char();
-					Token::AND
+					Ok(Token::AND)
 				}
-				lex => Token::ILLEGAL(format!("&{}", lex as char)),
+				lex => Err(LexerError::InvalidToken(
+					format!("&{}", lex as char),
+					self.file.to_string(),
+					self.line,
+					self.column,
+				)),
 			},
 			b'|' => match self.peek_char() {
 				b'|' => {
 					self.read_char();
 					self.read_char();
-					Token::OR
+					Ok(Token::OR)
 				}
-				lex => Token::ILLEGAL(format!("|{}", lex as char)),
+				lex => Err(LexerError::InvalidToken(
+					format!("|{}", lex as char),
+					self.file.to_string(),
+					self.line,
+					self.column,
+				)),
 			},
 
 			b',' => {
 				self.read_char();
-				Token::COMMA
+				Ok(Token::COMMA)
 			}
 			b';' => {
 				self.read_char();
-				Token::SEMICOLON
+				Ok(Token::SEMICOLON)
 			}
 			b'(' => {
 				self.read_char();
-				Token::LPAREN
+				Ok(Token::LPAREN)
 			}
 			b')' => {
 				self.read_char();
-				Token::RPAREN
+				Ok(Token::RPAREN)
 			}
 			b'{' => {
 				self.read_char();
-				Token::LBRACE
+				Ok(Token::LBRACE)
 			}
 			b'}' => {
 				self.read_char();
-				Token::RBRACE
+				Ok(Token::RBRACE)
 			}
 			b'[' => {
 				self.read_char();
-				Token::LBRACKET
+				Ok(Token::LBRACKET)
 			}
 			b']' => {
 				self.read_char();
-				Token::RBRACKET
+				Ok(Token::RBRACKET)
 			}
 
 			b'0'..=b'9' => self.read_integer(),
 
-			b'A'..=b'Z' | b'a'..=b'z' => self.read_identifier(),
+			b'A'..=b'Z' | b'a'..=b'z' => Ok(self.read_identifier()),
 
-			b'"' => self.read_string(),
+			b'"' => Ok(self.read_string()),
 
-			b'\t' | b' ' | b'\n' | b'\r' => {
+			b'\n' | b'\t' | b' ' | b'\r' => {
 				self.read_char();
 				self.next_token()
 			}
 
-			0 => Token::EOF,
-			lex => Token::ILLEGAL((lex as char).to_string()),
+			0 => Ok(Token::EOF),
+
+			lex => Err(LexerError::InvalidToken(
+				format!("{}", lex as char),
+				self.file.to_string(),
+				self.line,
+				self.column,
+			)),
 		}
 	}
 
@@ -154,6 +200,13 @@ impl<'a> Lexer<'a> {
 			self.char = 0;
 		} else {
 			self.char = self.input.as_bytes()[self.read_position];
+		}
+
+		if self.char == b'\n' {
+			self.line += 1;
+			self.column = 0;
+		} else {
+			self.column += 1;
 		}
 
 		self.position = self.read_position;
@@ -178,14 +231,21 @@ impl<'a> Lexer<'a> {
 		Token::lookup_identifier(identifier)
 	}
 
-	fn read_integer(&mut self) -> Token {
+	fn read_integer(&mut self) -> Result<Token, LexerError> {
 		let position = self.position;
 		while self.char.is_ascii_digit() {
 			self.read_char();
 		}
 
-		let integer = &self.input[position..self.position];
-		Token::INTEGER(integer.parse::<i32>().unwrap())
+		match &self.input[position..self.position].parse::<i32>() {
+			Ok(integer) => Ok(Token::INTEGER(*integer)),
+			Err(_) => Err(LexerError::InvalidInteger(
+				self.file.to_string(),
+				self.input[position..self.position].to_string(),
+				self.line,
+				self.column,
+			)),
+		}
 	}
 
 	fn read_string(&mut self) -> Token {

@@ -1,7 +1,5 @@
 #[derive(Debug, PartialEq, Clone, Hash, Eq)]
 pub enum Token {
-	ILLEGAL(String),
-
 	EOF,
 
 	IDENTIFIER(String),
@@ -62,7 +60,6 @@ impl Token {
 impl std::fmt::Display for Token {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 		match self {
-			Token::ILLEGAL(s) => write!(f, "ERROR: Invalid Lexeme ({})", s),
 			Token::EOF => write!(f, "tEOF"),
 			Token::IDENTIFIER(id) => write!(f, "tIDENTIFIER({})", id),
 			Token::INTEGER(i) => write!(f, "tINTEGER({})", i),

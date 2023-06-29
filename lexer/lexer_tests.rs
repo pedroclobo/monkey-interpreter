@@ -26,11 +26,11 @@ mod tests {
 			Token::RBRACKET,
 		];
 
-		let mut lexer = Lexer::new(input);
+		let mut lexer = Lexer::new(input, "single_char_tokens");
 
 		for (i, expected_token) in result.iter().enumerate() {
 			let token = lexer.next_token();
-			assert_eq!(token, *expected_token, "index: {}", i);
+			assert_eq!(token.unwrap(), *expected_token, "index: {}", i);
 		}
 	}
 
@@ -47,11 +47,11 @@ mod tests {
 			Token::OR,
 		];
 
-		let mut lexer = Lexer::new(input);
+		let mut lexer = Lexer::new(input, "double_char_tokens");
 
 		for (i, expected_token) in result.iter().enumerate() {
 			let token = lexer.next_token();
-			assert_eq!(token, *expected_token, "index: {}", i);
+			assert_eq!(token.unwrap(), *expected_token, "index: {}", i);
 		}
 	}
 
@@ -65,11 +65,11 @@ mod tests {
 			Token::IDENTIFIER("add".to_string()),
 		];
 
-		let mut lexer = Lexer::new(input);
+		let mut lexer = Lexer::new(input, "indentifiers");
 
 		for (i, expected_token) in result.iter().enumerate() {
 			let token = lexer.next_token();
-			assert_eq!(token, *expected_token, "index: {}", i);
+			assert_eq!(token.unwrap(), *expected_token, "index: {}", i);
 		}
 	}
 
@@ -85,11 +85,11 @@ mod tests {
 			Token::IF,
 		];
 
-		let mut lexer = Lexer::new(input);
+		let mut lexer = Lexer::new(input, "keywords");
 
 		for (i, expected_token) in result.iter().enumerate() {
 			let token = lexer.next_token();
-			assert_eq!(token, *expected_token, "index: {}", i);
+			assert_eq!(token.unwrap(), *expected_token, "index: {}", i);
 		}
 	}
 
@@ -104,11 +104,11 @@ mod tests {
 			Token::INTEGER(9999),
 		];
 
-		let mut lexer = Lexer::new(input);
+		let mut lexer = Lexer::new(input, "integers");
 
 		for (i, expected_token) in result.iter().enumerate() {
 			let token = lexer.next_token();
-			assert_eq!(token, *expected_token, "index: {}", i);
+			assert_eq!(token.unwrap(), *expected_token, "index: {}", i);
 		}
 	}
 
@@ -121,11 +121,11 @@ mod tests {
 			Token::STRING("world".to_string()),
 		];
 
-		let mut lexer = Lexer::new(input);
+		let mut lexer = Lexer::new(input, "strings");
 
 		for (i, expected_token) in result.iter().enumerate() {
 			let token = lexer.next_token();
-			assert_eq!(token, *expected_token, "index: {}", i);
+			assert_eq!(token.unwrap(), *expected_token, "index: {}", i);
 		}
 	}
 }

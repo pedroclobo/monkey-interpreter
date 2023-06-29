@@ -18,11 +18,21 @@ fn main() {
 			break;
 		}
 
-		let mut lexer = Lexer::new(&input);
-		let mut parser = Parser::new(&mut lexer);
+		let mut lexer = Lexer::new(&input, "stdin");
+		let mut parser = match Parser::new(&mut lexer) {
+			Ok(parser) => parser,
+			Err(e) => {
+				eprintln!("{}", e);
+				println!();
+				continue;
+			}
+		};
 
-		let program = parser.parse_program();
-		println!("{}", program.to_string());
+		match parser.parse_program() {
+			Ok(program) => println!("{}", program.to_string()),
+			Err(e) => eprintln!("{}", e),
+		};
+
 		println!();
 	}
 }

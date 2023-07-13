@@ -42,7 +42,8 @@ fn main() {
 			}
 		};
 
-		let mut evaluator = Evaluator::new(ast::Node::Program(program), &mut env);
+		let program = ast::Node::Program(program);
+		let mut evaluator = Evaluator::new(&program, &mut env);
 		println!("{}", evaluator.eval_program());
 		println!();
 	}

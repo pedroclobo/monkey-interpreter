@@ -21,7 +21,8 @@ mod tests {
 			};
 
 			let mut env = Environment::new();
-			let mut evaluator = Evaluator::new(ast::Node::Program(program), &mut env);
+			let program = ast::Node::Program(program);
+			let mut evaluator = Evaluator::new(&program, &mut env);
 
 			assert_eq!(evaluator.eval_program(), *symbol);
 		}

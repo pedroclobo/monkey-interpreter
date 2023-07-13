@@ -10,18 +10,18 @@ use symbol::{environment::Environment, Symbol};
 mod evaluator_tests;
 
 pub struct Evaluator<'a> {
-	pub program: Program,
+	pub program: &'a Program,
 	pub env: &'a mut Environment,
 }
 
 impl<'a> Evaluator<'a> {
-	pub fn new(program: Node, env: &'a mut Environment) -> Self {
+	pub fn new(program: &'a Node, env: &'a mut Environment) -> Self {
 		let program = match program {
 			Node::Program(p) => p,
 			_ => panic!("Expected a program."),
 		};
 
-		Evaluator { program, env }
+		Evaluator { program: &program, env }
 	}
 
 	pub fn eval_program(&mut self) -> Symbol {

@@ -2,10 +2,10 @@ pub mod environment;
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum Symbol {
-	Integer(Integer),
-	Boolean(Boolean),
-	StringLiteral(StringLiteral),
-	Null(Null),
+	Integer(i32),
+	Boolean(bool),
+	StringLiteral(String),
+	Null,
 	ReturnValue(ReturnValue),
 }
 
@@ -35,10 +35,10 @@ pub struct ReturnValue {
 impl std::fmt::Display for Symbol {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 		match self {
-			Symbol::Integer(i) => write!(f, "{}", i.value),
-			Symbol::Boolean(b) => write!(f, "{}", b.value),
-			Symbol::StringLiteral(s) => write!(f, "{}", s.value),
-			Symbol::Null(_) => write!(f, "NULL"),
+			Symbol::Integer(i) => write!(f, "{}", i),
+			Symbol::Boolean(b) => write!(f, "{}", b),
+			Symbol::StringLiteral(s) => write!(f, "{}", s),
+			Symbol::Null => write!(f, "NULL"),
 			Symbol::ReturnValue(s) => write!(f, "{}", s.value),
 		}
 	}

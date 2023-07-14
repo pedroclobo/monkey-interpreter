@@ -21,16 +21,17 @@ impl<'a> Evaluator<'a> {
 			_ => panic!("Expected a program."),
 		};
 
-		Evaluator { program: &program, env }
+		Evaluator {
+			program: &program,
+			env,
+		}
 	}
 
 	pub fn eval_program(&mut self) -> Symbol {
-		let mut result = Symbol::Null(symbol::Null {});
+		let mut result = Symbol::Null;
 
-		let statements = &self.program.statements;
-
-		for statement in statements.clone() {
-			result = self.eval(Node::Statement(statement));
+		for statement in &self.program.statements {
+			result = self.eval(Node::Statement(statement.clone()));
 
 			match result {
 				Symbol::ReturnValue(ret) => return *ret.value,
@@ -64,13 +65,9 @@ impl<'a> Evaluator<'a> {
 					Some(v) => v.clone(),
 					None => panic!("invalid identifier"),
 				},
-				Expression::IntegerLiteral(i) => {
-					Symbol::Integer(symbol::Integer { value: i.value })
-				}
-				Expression::Boolean(b) => Symbol::Boolean(symbol::Boolean { value: b.value }),
-				Expression::StringLiteral(s) => {
-					Symbol::StringLiteral(symbol::StringLiteral { value: s.value })
-				}
+				Expression::IntegerLiteral(i) => Symbol::Integer(i.value),
+				Expression::Boolean(b) => Symbol::Boolean(b.value),
+				Expression::StringLiteral(s) => Symbol::StringLiteral(s.value),
 				Expression::FunctionLiteral(_) => todo!(),
 				Expression::UnaryExpression(expr) => {
 					let right = self.eval(Node::Expression(*expr.right));
@@ -84,13 +81,10 @@ impl<'a> Evaluator<'a> {
 				Expression::IfExpression(expr) => {
 					let condition = self.eval(Node::Expression(*expr.condition));
 					match condition {
-						Symbol::Boolean(symbol::Boolean { value: true }) => {
-							self.eval(Node::BlockStatement(expr.consequence))
-						}
-						Symbol::Boolean(symbol::Boolean { value: false }) => match expr.alternative
-						{
+						Symbol::Boolean(true) => self.eval(Node::BlockStatement(expr.consequence)),
+						Symbol::Boolean(false) => match expr.alternative {
 							Some(alt) => self.eval(Node::BlockStatement(alt)),
-							None => Symbol::Null(symbol::Null {}),
+							None => Symbol::Null,
 						},
 						_ => panic!("invalid condition"),
 					}
@@ -101,7 +95,7 @@ impl<'a> Evaluator<'a> {
 	}
 
 	fn eval_block(&mut self, statements: Vec<Statement>) -> Symbol {
-		let mut result = Symbol::Null(symbol::Null {});
+		let mut result = Symbol::Null;
 
 		for statement in statements {
 			result = self.eval(Node::Statement(statement));
@@ -118,11 +112,11 @@ impl<'a> Evaluator<'a> {
 	fn eval_prefix_expression(&mut self, operator: Token, symbol: Symbol) -> Symbol {
 		match operator {
 			Token::MINUS => match symbol {
-				Symbol::Integer(i) => Symbol::Integer(symbol::Integer { value: -i.value }),
+				Symbol::Integer(i) => Symbol::Integer(-i),
 				_ => panic!("invalid minus operator expression"),
 			},
 			Token::NOT => match symbol {
-				Symbol::Boolean(b) => Symbol::Boolean(symbol::Boolean { value: !b.value }),
+				Symbol::Boolean(b) => Symbol::Boolean(!b),
 				_ => panic!("invalid not operator expression"),
 			},
 			_ => panic!("invalid prefix operator"),
@@ -132,81 +126,53 @@ impl<'a> Evaluator<'a> {
 	fn eval_infix_expression(&mut self, operator: Token, left: Symbol, right: Symbol) -> Symbol {
 		match operator {
 			Token::PLUS => match (left, right) {
-				(Symbol::Integer(li), Symbol::Integer(ri)) => Symbol::Integer(symbol::Integer {
-					value: li.value + ri.value,
-				}),
+				(Symbol::Integer(li), Symbol::Integer(ri)) => Symbol::Integer(li + ri),
 				_ => panic!("invalid plus operator expression"),
 			},
 			Token::MINUS => match (left, right) {
-				(Symbol::Integer(li), Symbol::Integer(ri)) => Symbol::Integer(symbol::Integer {
-					value: li.value - ri.value,
-				}),
+				(Symbol::Integer(li), Symbol::Integer(ri)) => Symbol::Integer(li - ri),
 				_ => panic!("invalid minus operator expression"),
 			},
 			Token::MUL => match (left, right) {
-				(Symbol::Integer(li), Symbol::Integer(ri)) => Symbol::Integer(symbol::Integer {
-					value: li.value * ri.value,
-				}),
+				(Symbol::Integer(li), Symbol::Integer(ri)) => Symbol::Integer(li * ri),
 				_ => panic!("invalid mul operator expression"),
 			},
 			Token::DIV => match (left, right) {
-				(Symbol::Integer(li), Symbol::Integer(ri)) => Symbol::Integer(symbol::Integer {
-					value: li.value / ri.value,
-				}),
+				(Symbol::Integer(li), Symbol::Integer(ri)) => Symbol::Integer(li / ri),
 				_ => panic!("invalid div operator expression"),
 			},
 			Token::LT => match (left, right) {
-				(Symbol::Integer(li), Symbol::Integer(ri)) => Symbol::Boolean(symbol::Boolean {
-					value: li.value < ri.value,
-				}),
+				(Symbol::Integer(li), Symbol::Integer(ri)) => Symbol::Boolean(li < ri),
 				_ => panic!("invalid lt operator expression"),
 			},
 			Token::GT => match (left, right) {
-				(Symbol::Integer(li), Symbol::Integer(ri)) => Symbol::Boolean(symbol::Boolean {
-					value: li.value > ri.value,
-				}),
+				(Symbol::Integer(li), Symbol::Integer(ri)) => Symbol::Boolean(li > ri),
 				_ => panic!("invalid gt operator expression"),
 			},
 			Token::LE => match (left, right) {
-				(Symbol::Integer(li), Symbol::Integer(ri)) => Symbol::Boolean(symbol::Boolean {
-					value: li.value <= ri.value,
-				}),
+				(Symbol::Integer(li), Symbol::Integer(ri)) => Symbol::Boolean(li <= ri),
 				_ => panic!("invalid le operator expression"),
 			},
 			Token::GE => match (left, right) {
-				(Symbol::Integer(li), Symbol::Integer(ri)) => Symbol::Boolean(symbol::Boolean {
-					value: li.value >= ri.value,
-				}),
+				(Symbol::Integer(li), Symbol::Integer(ri)) => Symbol::Boolean(li >= ri),
 				_ => panic!("invalid ge operator expression"),
 			},
 			Token::EQ => match (left, right) {
-				(Symbol::Integer(li), Symbol::Integer(ri)) => Symbol::Boolean(symbol::Boolean {
-					value: li.value == ri.value,
-				}),
-				(Symbol::Boolean(lb), Symbol::Boolean(rb)) => Symbol::Boolean(symbol::Boolean {
-					value: lb.value == rb.value,
-				}),
+				(Symbol::Integer(li), Symbol::Integer(ri)) => Symbol::Boolean(li == ri),
+				(Symbol::Boolean(lb), Symbol::Boolean(rb)) => Symbol::Boolean(lb == rb),
 				_ => panic!("invalid eq operator expression"),
 			},
 			Token::NE => match (left, right) {
-				(Symbol::Integer(li), Symbol::Integer(ri)) => Symbol::Boolean(symbol::Boolean {
-					value: li.value != ri.value,
-				}),
-				(Symbol::Boolean(lb), Symbol::Boolean(rb)) => Symbol::Boolean(symbol::Boolean {
-					value: lb.value != rb.value,
-				}),
+				(Symbol::Integer(li), Symbol::Integer(ri)) => Symbol::Boolean(li != ri),
+				(Symbol::Boolean(lb), Symbol::Boolean(rb)) => Symbol::Boolean(lb != rb),
 				_ => panic!("invalid ne operator expression"),
 			},
 			Token::AND => match (left, right) {
-				(Symbol::Boolean(lb), Symbol::Boolean(rb)) => Symbol::Boolean(symbol::Boolean {
-					value: lb.value && rb.value,
-				}),
+				(Symbol::Boolean(lb), Symbol::Boolean(rb)) => Symbol::Boolean(lb && rb),
 				_ => panic!("invalid and operator expression"),
 			},
 			Token::OR => match (left, right) {
-				(Symbol::Boolean(lb), Symbol::Boolean(rb)) => Symbol::Boolean(symbol::Boolean {
-					value: lb.value || rb.value,
-				}),
+				(Symbol::Boolean(lb), Symbol::Boolean(rb)) => Symbol::Boolean(lb || rb),
 				_ => panic!("invalid and operator expression"),
 			},
 			_ => panic!("invalid infix operator"),

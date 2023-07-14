@@ -24,7 +24,7 @@ mod tests {
 			let program = ast::Node::Program(program);
 			let mut evaluator = Evaluator::new(&program, &mut env);
 
-			assert_eq!(evaluator.eval_program(), *symbol);
+			assert_eq!(*evaluator.eval_program(), *symbol);
 		}
 	}
 
@@ -154,11 +154,11 @@ mod tests {
             "#,
 		];
 		let expected = vec![
-			Symbol::Integer(10),
-			Symbol::Integer(10),
-			Symbol::Integer(10),
-			Symbol::Integer(10),
-			Symbol::Integer(10),
+			Symbol::ReturnValue(Symbol::Integer(10).into()),
+			Symbol::ReturnValue(Symbol::Integer(10).into()),
+			Symbol::ReturnValue(Symbol::Integer(10).into()),
+			Symbol::ReturnValue(Symbol::Integer(10).into()),
+			Symbol::ReturnValue(Symbol::Integer(10).into()),
 		];
 
 		test(&input, &expected);

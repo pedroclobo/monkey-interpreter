@@ -3,7 +3,7 @@ extern crate lexer;
 extern crate parser;
 extern crate symbol;
 
-use evaluator::Evaluator;
+use evaluator::eval;
 use lexer::Lexer;
 use parser::Parser;
 use symbol::environment::Environment;
@@ -43,8 +43,7 @@ fn main() {
 		};
 
 		let program = ast::Node::Program(program);
-		let mut evaluator = Evaluator::new(&program, &mut env);
-		println!("{}", evaluator.eval_program());
+		println!("{}", eval(program, &mut env));
 		println!();
 	}
 }

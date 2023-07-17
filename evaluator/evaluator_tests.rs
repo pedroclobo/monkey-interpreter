@@ -1,10 +1,9 @@
 #[cfg(test)]
 mod tests {
+	use eval;
 	use lexer::Lexer;
 	use parser::Parser;
-	use Environment;
-	use Evaluator;
-	use Symbol;
+	use symbol::{environment::Environment, Symbol};
 
 	fn test(input: &Vec<&str>, expected: &Vec<Symbol>) {
 		for (i, symbol) in expected.iter().enumerate() {
@@ -22,19 +21,15 @@ mod tests {
 
 			let mut env = Environment::new();
 			let program = ast::Node::Program(program);
-			let mut evaluator = Evaluator::new(&program, &mut env);
 
-			assert_eq!(*evaluator.eval_program(), *symbol);
+			assert_eq!(*eval(program, &mut env), *symbol);
 		}
 	}
 
 	#[test]
 	fn integer_expressions() {
 		let input = vec!["5", "10"];
-		let expected = vec![
-			Symbol::Integer(5),
-			Symbol::Integer(10),
-		];
+		let expected = vec![Symbol::Integer(5), Symbol::Integer(10)];
 
 		test(&input, &expected);
 	}
@@ -42,10 +37,7 @@ mod tests {
 	#[test]
 	fn boolean_expressions() {
 		let input = vec!["false", "true"];
-		let expected = vec![
-			Symbol::Boolean(false),
-			Symbol::Boolean(true),
-		];
+		let expected = vec![Symbol::Boolean(false), Symbol::Boolean(true)];
 
 		test(&input, &expected);
 	}

@@ -2,7 +2,7 @@ extern crate lexer;
 
 use lexer::token::Token;
 
-#[derive(Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Node {
 	Program(Program),
 	Statement(Statement),
@@ -10,14 +10,14 @@ pub enum Node {
 	Expression(Expression),
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Statement {
 	LetStatement(LetStatement),
 	ReturnStatement(ReturnStatement),
 	ExpressionStatement(ExpressionStatement),
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Expression {
 	Identifier(Identifier),
 	IntegerLiteral(IntegerLiteral),
@@ -30,79 +30,79 @@ pub enum Expression {
 	FunctionCall(FunctionCall),
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Program {
 	pub statements: Vec<Statement>,
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct LetStatement {
 	pub identifier: Identifier,
 	pub value: Expression,
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct ReturnStatement {
 	pub value: Expression,
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct ExpressionStatement {
 	pub expression: Expression,
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct BlockStatement {
 	pub statements: Vec<Statement>,
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Identifier {
 	pub value: String,
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct IntegerLiteral {
 	pub value: i32,
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Boolean {
 	pub value: bool,
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct StringLiteral {
 	pub value: String,
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct FunctionLiteral {
 	pub parameters: Vec<Identifier>,
 	pub body: BlockStatement,
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct UnaryExpression {
 	pub operator: Token,
 	pub right: Box<Expression>,
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct BinaryExpression {
 	pub left: Box<Expression>,
 	pub operator: Token,
 	pub right: Box<Expression>,
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct IfExpression {
 	pub condition: Box<Expression>,
 	pub consequence: BlockStatement,
 	pub alternative: Option<BlockStatement>,
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct FunctionCall {
 	pub function: Box<Expression>,
 	pub arguments: Vec<Expression>,
@@ -231,5 +231,11 @@ impl std::fmt::Display for BlockStatement {
 				.collect::<Vec<String>>()
 				.join("")
 		)
+	}
+}
+
+impl std::fmt::Display for Identifier {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		write!(f, "{}", self.value.to_string())
 	}
 }

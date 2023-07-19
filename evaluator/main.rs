@@ -6,12 +6,14 @@ extern crate symbol;
 use evaluator::eval;
 use lexer::Lexer;
 use parser::Parser;
+use std::cell::RefCell;
+use std::rc::Rc;
 use symbol::environment::Environment;
 
 use std::io::Write;
 
 fn main() {
-	let mut env = Environment::new();
+	let env = Rc::new(RefCell::new(Environment::new()));
 
 	loop {
 		print!(">> ");
@@ -43,7 +45,7 @@ fn main() {
 		};
 
 		let program = ast::Node::Program(program);
-		println!("{}", eval(program, &mut env));
+		println!("{}", eval(program, &env));
 		println!();
 	}
 }

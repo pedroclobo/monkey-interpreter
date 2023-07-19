@@ -9,8 +9,12 @@ name = "evaluator"
 path= "lib.rs"
 
 [[bin]]
-name = "evaluator"
-path = "main.rs"
+name = "repl"
+path = "repl.rs"
+
+[[bin]]
+name = "interpreter"
+path = "interpreter.rs"
 
 [dependencies]
 monkey-lexer = { path = "../lexer" }

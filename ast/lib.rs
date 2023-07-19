@@ -6,7 +6,6 @@ use lexer::token::Token;
 pub enum Node {
 	Program(Program),
 	Statement(Statement),
-	BlockStatement(BlockStatement),
 	Expression(Expression),
 }
 
@@ -15,6 +14,7 @@ pub enum Statement {
 	LetStatement(LetStatement),
 	ReturnStatement(ReturnStatement),
 	ExpressionStatement(ExpressionStatement),
+	BlockStatement(BlockStatement),
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -38,7 +38,7 @@ pub struct Program {
 #[derive(Debug, Clone, PartialEq)]
 pub struct LetStatement {
 	pub identifier: Identifier,
-	pub value: Expression,
+	pub expression: Expression,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -114,7 +114,6 @@ impl std::fmt::Display for Node {
 			Node::Program(p) => write!(f, "{}", p.to_string()),
 			Node::Statement(s) => write!(f, "{}", s.to_string()),
 			Node::Expression(e) => write!(f, "{}", e.to_string()),
-			Node::BlockStatement(b) => write!(f, "{}", b.to_string()),
 		}
 	}
 }
@@ -136,10 +135,11 @@ impl std::fmt::Display for Statement {
 				f,
 				"tLET({}, {})",
 				l.identifier.value.to_string(),
-				l.value.to_string()
+				l.expression.to_string()
 			),
 			Statement::ReturnStatement(r) => write!(f, "tRETURN({})", r.value.to_string()),
 			Statement::ExpressionStatement(e) => write!(f, "{}", e.expression.to_string()),
+			Statement::BlockStatement(b) => write!(f, "{}", b.to_string()),
 		}
 	}
 }

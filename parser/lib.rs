@@ -313,11 +313,14 @@ impl<'a, 'b> Parser<'a, 'b> {
 		self.expect_peek_token(Token::ASSIGN)?;
 		self.next_token()?; // curr = assign
 
-		let value = self.parse_expression(LOWEST_PRECEDENCE)?;
+		let expression = self.parse_expression(LOWEST_PRECEDENCE)?;
 
 		self.expect_peek_token(Token::SEMICOLON)?;
 
-		Ok(Statement::LetStatement(LetStatement { identifier, value }))
+		Ok(Statement::LetStatement(LetStatement {
+			identifier,
+			expression,
+		}))
 	}
 
 	fn parse_return_statement(&mut self) -> Result<Statement, ParserError> {

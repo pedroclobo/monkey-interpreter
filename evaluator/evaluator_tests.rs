@@ -1,5 +1,6 @@
 #[cfg(test)]
 mod tests {
+	use ast::Node;
 	use eval;
 	use lexer::Lexer;
 	use parser::Parser;
@@ -22,7 +23,7 @@ mod tests {
 			};
 
 			let env = Rc::new(RefCell::new(Environment::new()));
-			let program = ast::Node::Program(program);
+			let program = Node::Program(program);
 
 			assert_eq!(*eval(program, &env), *symbol);
 		}
@@ -31,10 +32,7 @@ mod tests {
 	#[test]
 	fn integer_expressions() {
 		let input = vec!["5", "10"];
-		let expected = vec![
-			symbol::Symbol::Integer(symbol::Integer { value: 5 }),
-			symbol::Symbol::Integer(symbol::Integer { value: 10 }),
-		];
+		let expected = vec![Symbol::Integer(5), Symbol::Integer(10)];
 
 		test(&input, &expected);
 	}
@@ -42,10 +40,7 @@ mod tests {
 	#[test]
 	fn boolean_expressions() {
 		let input = vec!["false", "true"];
-		let expected = vec![
-			symbol::Symbol::Boolean(symbol::Boolean { value: false }),
-			symbol::Symbol::Boolean(symbol::Boolean { value: true }),
-		];
+		let expected = vec![Symbol::Boolean(false), Symbol::Boolean(true)];
 
 		test(&input, &expected);
 	}
@@ -54,12 +49,8 @@ mod tests {
 	fn string_expressions() {
 		let input = vec!["\"hello\"", "\"world\""];
 		let expected = vec![
-			symbol::Symbol::StringLiteral(symbol::StringLiteral {
-				value: "hello".to_string(),
-			}),
-			symbol::Symbol::StringLiteral(symbol::StringLiteral {
-				value: "world".to_string(),
-			}),
+			Symbol::StringLiteral("hello".to_string()),
+			Symbol::StringLiteral("world".to_string()),
 		];
 
 		test(&input, &expected);
@@ -69,11 +60,11 @@ mod tests {
 	fn prefix_expressions() {
 		let input = vec!["!true", "!false", "-5", "-10", "-0"];
 		let expected = vec![
-			symbol::Symbol::Boolean(symbol::Boolean { value: false }),
-			symbol::Symbol::Boolean(symbol::Boolean { value: true }),
-			symbol::Symbol::Integer(symbol::Integer { value: -5 }),
-			symbol::Symbol::Integer(symbol::Integer { value: -10 }),
-			symbol::Symbol::Integer(symbol::Integer { value: 0 }),
+			Symbol::Boolean(false),
+			Symbol::Boolean(true),
+			Symbol::Integer(-5),
+			Symbol::Integer(-10),
+			Symbol::Integer(0),
 		];
 
 		test(&input, &expected);
@@ -101,23 +92,23 @@ mod tests {
 			"true && false || true;",
 		];
 		let expected = vec![
-			symbol::Symbol::Integer(symbol::Integer { value: 10 }),
-			symbol::Symbol::Integer(symbol::Integer { value: 32 }),
-			symbol::Symbol::Integer(symbol::Integer { value: 0 }),
-			symbol::Symbol::Integer(symbol::Integer { value: 20 }),
-			symbol::Symbol::Integer(symbol::Integer { value: 25 }),
-			symbol::Symbol::Integer(symbol::Integer { value: 0 }),
-			symbol::Symbol::Integer(symbol::Integer { value: 60 }),
-			symbol::Symbol::Integer(symbol::Integer { value: 30 }),
-			symbol::Symbol::Integer(symbol::Integer { value: 37 }),
-			symbol::Symbol::Integer(symbol::Integer { value: 37 }),
-			symbol::Symbol::Integer(symbol::Integer { value: 50 }),
-			symbol::Symbol::Boolean(symbol::Boolean { value: true }),
-			symbol::Symbol::Boolean(symbol::Boolean { value: true }),
-			symbol::Symbol::Boolean(symbol::Boolean { value: false }),
-			symbol::Symbol::Boolean(symbol::Boolean { value: false }),
-			symbol::Symbol::Boolean(symbol::Boolean { value: true }),
-			symbol::Symbol::Boolean(symbol::Boolean { value: true }),
+			Symbol::Integer(10),
+			Symbol::Integer(32),
+			Symbol::Integer(0),
+			Symbol::Integer(20),
+			Symbol::Integer(25),
+			Symbol::Integer(0),
+			Symbol::Integer(60),
+			Symbol::Integer(30),
+			Symbol::Integer(37),
+			Symbol::Integer(37),
+			Symbol::Integer(50),
+			Symbol::Boolean(true),
+			Symbol::Boolean(true),
+			Symbol::Boolean(false),
+			Symbol::Boolean(false),
+			Symbol::Boolean(true),
+			Symbol::Boolean(true),
 		];
 
 		test(&input, &expected);
@@ -132,10 +123,10 @@ mod tests {
 			"if (false) { 10 } else { 20 };",
 		];
 		let expected = vec![
-			symbol::Symbol::Integer(symbol::Integer { value: 10 }),
-			symbol::Symbol::Null(symbol::Null {}),
-			symbol::Symbol::Integer(symbol::Integer { value: 10 }),
-			symbol::Symbol::Integer(symbol::Integer { value: 20 }),
+			Symbol::Integer(10),
+			Symbol::Null,
+			Symbol::Integer(10),
+			Symbol::Integer(20),
 		];
 
 		test(&input, &expected);
@@ -158,21 +149,11 @@ mod tests {
             "#,
 		];
 		let expected = vec![
-			symbol::Symbol::ReturnValue(symbol::ReturnValue {
-				value: symbol::Symbol::Integer(symbol::Integer { value: 10 }).into(),
-			}),
-			symbol::Symbol::ReturnValue(symbol::ReturnValue {
-				value: symbol::Symbol::Integer(symbol::Integer { value: 10 }).into(),
-			}),
-			symbol::Symbol::ReturnValue(symbol::ReturnValue {
-				value: symbol::Symbol::Integer(symbol::Integer { value: 10 }).into(),
-			}),
-			symbol::Symbol::ReturnValue(symbol::ReturnValue {
-				value: symbol::Symbol::Integer(symbol::Integer { value: 10 }).into(),
-			}),
-			symbol::Symbol::ReturnValue(symbol::ReturnValue {
-				value: symbol::Symbol::Integer(symbol::Integer { value: 10 }).into(),
-			}),
+			Symbol::ReturnValue(Rc::from(Symbol::Integer(10))),
+			Symbol::ReturnValue(Rc::from(Symbol::Integer(10))),
+			Symbol::ReturnValue(Rc::from(Symbol::Integer(10))),
+			Symbol::ReturnValue(Rc::from(Symbol::Integer(10))),
+			Symbol::ReturnValue(Rc::from(Symbol::Integer(10))),
 		];
 
 		test(&input, &expected);
@@ -187,10 +168,10 @@ mod tests {
 			"let a = 5; let b = a; let c = a + b + 5; c;",
 		];
 		let expected = vec![
-			symbol::Symbol::Integer(symbol::Integer { value: 5 }),
-			symbol::Symbol::Integer(symbol::Integer { value: 25 }),
-			symbol::Symbol::Integer(symbol::Integer { value: 5 }),
-			symbol::Symbol::Integer(symbol::Integer { value: 15 }),
+			Symbol::Integer(5),
+			Symbol::Integer(25),
+			Symbol::Integer(5),
+			Symbol::Integer(15),
 		];
 
 		test(&input, &expected);
@@ -207,12 +188,12 @@ mod tests {
 			"fn(x) { x; }(5)",
 		];
 		let expected = vec![
-			symbol::Symbol::Integer(symbol::Integer { value: 5 }),
-			symbol::Symbol::Integer(symbol::Integer { value: 5 }),
-			symbol::Symbol::Integer(symbol::Integer { value: 10 }),
-			symbol::Symbol::Integer(symbol::Integer { value: 10 }),
-			symbol::Symbol::Integer(symbol::Integer { value: 20 }),
-			symbol::Symbol::Integer(symbol::Integer { value: 5 }),
+			Symbol::Integer(5),
+			Symbol::Integer(5),
+			Symbol::Integer(10),
+			Symbol::Integer(10),
+			Symbol::Integer(20),
+			Symbol::Integer(5),
 		];
 
 		test(&input, &expected);
@@ -238,10 +219,7 @@ mod tests {
 			};
             factorial(5);",
 		];
-		let expected = vec![
-			symbol::Symbol::Integer(symbol::Integer { value: 55 }),
-			symbol::Symbol::Integer(symbol::Integer { value: 120 }),
-		];
+		let expected = vec![Symbol::Integer(55), Symbol::Integer(120)];
 
 		test(&input, &expected);
 	}

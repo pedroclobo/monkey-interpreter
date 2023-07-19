@@ -3,17 +3,9 @@
 version = 3
 
 [[package]]
-name = "monkey-ast"
-version = "0.1.0"
-dependencies = [
- "monkey-lexer",
-]
-
-[[package]]
 name = "monkey-evaluator"
 version = "0.1.0"
 dependencies = [
- "monkey-ast",
  "monkey-lexer",
  "monkey-parser",
  "monkey-symbol",
@@ -27,7 +19,6 @@ version = "0.1.0"
 name = "monkey-parser"
 version = "0.1.0"
 dependencies = [
- "monkey-ast",
  "monkey-lexer",
 ]
 
@@ -35,7 +26,6 @@ dependencies = [
 name = "monkey-symbol"
 version = "0.1.0"
 dependencies = [
- "monkey-ast",
  "monkey-lexer",
  "monkey-parser",
 ]

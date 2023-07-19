@@ -1,7 +1,6 @@
 [workspace]
 members = [ 
 	"lexer",
-	"ast",
 	"parser",
 	"symbol",
 	"evaluator"

@@ -1,5 +1,6 @@
-pub extern crate ast;
 pub extern crate lexer;
+
+pub mod ast;
 
 use ast::{
 	BinaryExpression, BlockStatement, Boolean, Expression, ExpressionStatement, FunctionCall,
@@ -8,7 +9,7 @@ use ast::{
 };
 use lexer::{token::Token, Lexer, LexerError};
 
-mod parser_tests;
+mod tests;
 
 const LOWEST_PRECEDENCE: u32 = 0;
 

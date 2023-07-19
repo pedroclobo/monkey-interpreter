@@ -11,4 +11,3 @@ path= "lib.rs"
 [dependencies]
 monkey-lexer = { path = "../lexer" }
 monkey-parser = { path = "../parser" }
-monkey-ast = { path = "../ast" }

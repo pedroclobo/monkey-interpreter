@@ -14,4 +14,3 @@ path = "main.rs"
 
 [dependencies]
 monkey-lexer = { path = "../lexer" }
-monkey-ast = { path = "../ast" }

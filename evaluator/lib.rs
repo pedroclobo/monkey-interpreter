@@ -1,17 +1,17 @@
-extern crate ast;
 extern crate lexer;
 extern crate parser;
 extern crate symbol;
 
-use ast::{Expression, Node, Program, Statement};
 use lexer::token::Token;
+use parser::ast;
+use parser::ast::{Expression, Node, Program, Statement};
 use symbol::environment::Environment;
 use symbol::Symbol;
 
 use std::cell::RefCell;
 use std::rc::Rc;
 
-mod evaluator_tests;
+mod tests;
 
 type Env = Rc<RefCell<Environment>>;
 

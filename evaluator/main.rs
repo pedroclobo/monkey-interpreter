@@ -5,7 +5,7 @@ extern crate symbol;
 
 use evaluator::eval;
 use lexer::Lexer;
-use parser::Parser;
+use parser::{ast, Parser};
 use std::cell::RefCell;
 use std::rc::Rc;
 use symbol::environment::Environment;

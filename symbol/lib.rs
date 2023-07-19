@@ -1,7 +1,8 @@
+extern crate parser;
+
 pub mod environment;
 
-extern crate ast;
-
+use parser::ast;
 use std::rc::Rc;
 
 #[derive(Debug, PartialEq, Clone)]

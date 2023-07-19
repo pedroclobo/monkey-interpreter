@@ -1,6 +1,6 @@
 use crate::token::Token;
 
-mod lexer_tests;
+mod tests;
 pub mod token;
 
 #[derive(Debug, PartialEq, Clone)]

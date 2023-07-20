@@ -17,6 +17,7 @@ fn main() {
 		}
 
 		let mut lexer = Lexer::new(&input, "stdin");
+
 		loop {
 			let tok = lexer.next_token();
 			match tok {

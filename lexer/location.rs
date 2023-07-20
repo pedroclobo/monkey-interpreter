@@ -10,7 +10,7 @@ impl Default for Location {
 		Location {
 			file: "stdin".to_string(),
 			line: 1,
-			column: 1,
+			column: 0,
 		}
 	}
 }

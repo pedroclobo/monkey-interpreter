@@ -9,7 +9,6 @@ pub mod token;
 
 pub struct Lexer<'a> {
 	pub location: Location,
-
 	input: &'a str,
 	position: usize,
 	read_position: usize,
@@ -20,7 +19,6 @@ impl<'a> Lexer<'a> {
 	pub fn new(input: &'a str, file: &'a str) -> Self {
 		let mut lex = Lexer {
 			location: Location::default(),
-
 			input,
 			position: 0,
 			read_position: 0,
@@ -116,7 +114,7 @@ impl<'a> Lexer<'a> {
 				}
 				lex => Err(LexerError::InvalidTokenSequenceError(
 					format!("&{}", lex as char),
-					self.location.clone(),
+					token.location.clone(),
 				)),
 			},
 			b'|' => match self.peek_char() {
@@ -128,7 +126,7 @@ impl<'a> Lexer<'a> {
 				}
 				lex => Err(LexerError::InvalidTokenSequenceError(
 					format!("|{}", lex as char),
-					self.location.clone(),
+					token.location.clone(),
 				)),
 			},
 
@@ -191,7 +189,7 @@ impl<'a> Lexer<'a> {
 
 			lex => Err(LexerError::InvalidTokenError(
 				format!("{}", lex as char),
-				self.location.clone(),
+				token.location.clone(),
 			)),
 		}
 	}
@@ -223,38 +221,43 @@ impl<'a> Lexer<'a> {
 	}
 
 	fn read_identifier(&mut self) -> Token {
+		let mut token = Token::default();
+		token.location = self.location.clone();
+
 		let position = self.position;
 		while self.char.is_ascii_alphabetic() || self.char == b'_' {
 			self.read_char();
 		}
 
 		let identifier = &self.input[position..self.position];
-		Token {
-			kind: Token::lookup_identifier(identifier),
-			location: self.location.clone(),
-		}
+		token.kind = Token::lookup_identifier(identifier);
+
+		token
 	}
 
 	fn read_integer(&mut self) -> Result<Token, LexerError> {
+		let mut token = Token::default();
+		token.location = self.location.clone();
+
 		let position = self.position;
 		while self.char.is_ascii_digit() {
 			self.read_char();
 		}
 
 		match &self.input[position..self.position].parse::<i32>() {
-			Ok(integer) => Ok(Token {
-				kind: TokenKind::INTEGER(*integer),
-				location: self.location.clone(),
-			}),
+			Ok(integer) => {
+				token.kind = TokenKind::INTEGER(*integer);
+				Ok(token)
+			}
 			Err(_) => Err(LexerError::InvalidIntegerError(
 				self.input[position..self.position].to_string(),
-				self.location.clone(),
+				token.location.clone(),
 			)),
 		}
 	}
 
 	fn read_string(&mut self) -> Token {
-		let mut token: Token = Default::default();
+		let mut token: Token = Token::default();
 		token.location = self.location.clone();
 
 		self.read_char(); // read the opening "

@@ -1,5 +1,7 @@
+use crate::location::Location;
+
 #[derive(Debug, PartialEq, Clone, Hash, Eq)]
-pub enum Token {
+pub enum TokenKind {
 	EOF,
 
 	IDENTIFIER(String),
@@ -42,58 +44,86 @@ pub enum Token {
 	UNARY,
 }
 
+impl std::fmt::Display for TokenKind {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		match self {
+			TokenKind::EOF => write!(f, "tEOF"),
+			TokenKind::IDENTIFIER(id) => write!(f, "tIDENTIFIER({})", id),
+			TokenKind::INTEGER(i) => write!(f, "tINTEGER({})", i),
+			TokenKind::STRING(s) => write!(f, "tSTRING({})", s),
+			TokenKind::ASSIGN => write!(f, "tASSIGN"),
+			TokenKind::PLUS => write!(f, "tPLUS"),
+			TokenKind::MINUS => write!(f, "tMINUS"),
+			TokenKind::MUL => write!(f, "tMUL"),
+			TokenKind::DIV => write!(f, "tDIV"),
+			TokenKind::LT => write!(f, "tLT"),
+			TokenKind::GT => write!(f, "tGT"),
+			TokenKind::GE => write!(f, "tGE"),
+			TokenKind::LE => write!(f, "tLE"),
+			TokenKind::EQ => write!(f, "tEQ"),
+			TokenKind::NE => write!(f, "tNE"),
+			TokenKind::AND => write!(f, "tAND"),
+			TokenKind::OR => write!(f, "tOR"),
+			TokenKind::NOT => write!(f, "tNOT"),
+			TokenKind::COMMA => write!(f, "tCOMMA"),
+			TokenKind::SEMICOLON => write!(f, "tSEMICOLON"),
+			TokenKind::LPAREN => write!(f, "tLPAREN"),
+			TokenKind::RPAREN => write!(f, "tRPAREN"),
+			TokenKind::LBRACE => write!(f, "tLBRACE"),
+			TokenKind::RBRACE => write!(f, "tRBRACE"),
+			TokenKind::LBRACKET => write!(f, "tLBRACKET"),
+			TokenKind::RBRACKET => write!(f, "tRBRACKET"),
+			TokenKind::FUNCTION => write!(f, "tFUNCTION"),
+			TokenKind::LET => write!(f, "tLET"),
+			TokenKind::TRUE => write!(f, "tTRUE"),
+			TokenKind::FALSE => write!(f, "tFALSE"),
+			TokenKind::IF => write!(f, "tIF"),
+			TokenKind::ELSE => write!(f, "tELSE"),
+			TokenKind::RETURN => write!(f, "tRETURN"),
+			TokenKind::UNARY => write!(f, "tUNARY"),
+		}
+	}
+}
+
+#[derive(Debug, PartialEq, Clone)]
+pub struct Token {
+	pub kind: TokenKind,
+	pub location: Location,
+}
+
 impl Token {
-	pub fn lookup_identifier(identifier: &str) -> Token {
+	pub fn new(kind: TokenKind) -> Self {
+		Token {
+			kind,
+			location: Location::default(),
+		}
+	}
+
+	pub fn lookup_identifier(identifier: &str) -> TokenKind {
 		match identifier {
-			"fn" => Token::FUNCTION,
-			"let" => Token::LET,
-			"true" => Token::TRUE,
-			"false" => Token::FALSE,
-			"if" => Token::IF,
-			"else" => Token::ELSE,
-			"return" => Token::RETURN,
-			_ => Token::IDENTIFIER(identifier.to_string()),
+			"fn" => TokenKind::FUNCTION,
+			"let" => TokenKind::LET,
+			"true" => TokenKind::TRUE,
+			"false" => TokenKind::FALSE,
+			"if" => TokenKind::IF,
+			"else" => TokenKind::ELSE,
+			"return" => TokenKind::RETURN,
+			_ => TokenKind::IDENTIFIER(identifier.to_string()),
+		}
+	}
+}
+
+impl Default for Token {
+	fn default() -> Self {
+		Token {
+			kind: TokenKind::EOF,
+			location: Location::default(),
 		}
 	}
 }
 
 impl std::fmt::Display for Token {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-		match self {
-			Token::EOF => write!(f, "tEOF"),
-			Token::IDENTIFIER(id) => write!(f, "tIDENTIFIER({})", id),
-			Token::INTEGER(i) => write!(f, "tINTEGER({})", i),
-			Token::STRING(s) => write!(f, "tSTRING({})", s),
-			Token::ASSIGN => write!(f, "tASSIGN"),
-			Token::PLUS => write!(f, "tPLUS"),
-			Token::MINUS => write!(f, "tMINUS"),
-			Token::MUL => write!(f, "tMUL"),
-			Token::DIV => write!(f, "tDIV"),
-			Token::LT => write!(f, "tLT"),
-			Token::GT => write!(f, "tGT"),
-			Token::GE => write!(f, "tGE"),
-			Token::LE => write!(f, "tLE"),
-			Token::EQ => write!(f, "tEQ"),
-			Token::NE => write!(f, "tNE"),
-			Token::AND => write!(f, "tAND"),
-			Token::OR => write!(f, "tOR"),
-			Token::NOT => write!(f, "tNOT"),
-			Token::COMMA => write!(f, "tCOMMA"),
-			Token::SEMICOLON => write!(f, "tSEMICOLON"),
-			Token::LPAREN => write!(f, "tLPAREN"),
-			Token::RPAREN => write!(f, "tRPAREN"),
-			Token::LBRACE => write!(f, "tLBRACE"),
-			Token::RBRACE => write!(f, "tRBRACE"),
-			Token::LBRACKET => write!(f, "tLBRACKET"),
-			Token::RBRACKET => write!(f, "tRBRACKET"),
-			Token::FUNCTION => write!(f, "tFUNCTION"),
-			Token::LET => write!(f, "tLET"),
-			Token::TRUE => write!(f, "tTRUE"),
-			Token::FALSE => write!(f, "tFALSE"),
-			Token::IF => write!(f, "tIF"),
-			Token::ELSE => write!(f, "tELSE"),
-			Token::RETURN => write!(f, "tRETURN"),
-			Token::UNARY => write!(f, "tUNARY"),
-		}
+		self.kind.fmt(f)
 	}
 }

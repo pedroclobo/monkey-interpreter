@@ -2,8 +2,7 @@ extern crate lexer;
 
 use std::io::Write;
 
-use lexer::token::Token;
-use lexer::Lexer;
+use lexer::{Lexer, TokenKind};
 
 fn main() {
 	loop {
@@ -21,8 +20,10 @@ fn main() {
 		loop {
 			let tok = lexer.next_token();
 			match tok {
-				Ok(Token::EOF) => break,
-				Ok(tok) => println!("{}", tok),
+				Ok(tok) => match tok.kind {
+					TokenKind::EOF => break,
+					kind => println!("{:?}", kind),
+				},
 				Err(e) => {
 					eprintln!("{}", e);
 					break;

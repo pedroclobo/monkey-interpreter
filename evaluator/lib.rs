@@ -2,7 +2,7 @@ extern crate lexer;
 extern crate parser;
 extern crate symbol;
 
-use lexer::token::Token;
+use lexer::{Location, Token, TokenKind};
 use parser::ast;
 use parser::ast::{Expression, Node, Program, Statement};
 use symbol::environment::Environment;
@@ -18,10 +18,10 @@ type Env = Rc<RefCell<Environment>>;
 #[derive(Debug)]
 pub enum EvaluatorError {
 	InvalidIndentifierError(String),
-	InvalidPrefixExpressionError(Option<Token>),
+	InvalidPrefixExpressionError(Option<TokenKind>, Location),
 	InvalidConditionError,
 	InvalidFunctionError,
-	InvalidInfixExpressionError(Option<Token>),
+	InvalidInfixExpressionError(Option<TokenKind>, Location),
 }
 
 impl std::fmt::Display for EvaluatorError {
@@ -32,15 +32,15 @@ impl std::fmt::Display for EvaluatorError {
 			InvalidIndentifierError(identifier) => {
 				write!(f, "identifier not found: {}", identifier)
 			}
-			InvalidPrefixExpressionError(token) => match token {
-				Some(token) => write!(f, "invalid prefix expression: {}", token),
-				None => write!(f, "invalid prefix expression"),
+			InvalidPrefixExpressionError(token, location) => match token {
+				Some(token) => write!(f, "{} - invalid prefix expression: {}", location, token),
+				None => write!(f, "{} - invalid prefix expression", location),
 			},
 			InvalidConditionError => write!(f, "invalid condition"),
 			InvalidFunctionError => write!(f, "invalid function"),
-			InvalidInfixExpressionError(token) => match token {
-				Some(token) => write!(f, "invalid infix expression: {}", token),
-				None => write!(f, "invalid infix expression"),
+			InvalidInfixExpressionError(token, location) => match token {
+				Some(token) => write!(f, "{} - invalid infix expression: {}", location, token),
+				None => write!(f, "{} - invalid infix expression", location),
 			},
 		}
 	}
@@ -165,20 +165,25 @@ fn eval_expressions(
 }
 
 fn eval_prefix_expression(operator: Token, symbol: &Symbol) -> Result<Rc<Symbol>, EvaluatorError> {
-	match operator {
-		Token::MINUS => match symbol {
+	match operator.kind {
+		TokenKind::MINUS => match symbol {
 			Symbol::Integer(value) => Ok(Rc::from(Symbol::Integer(-value))),
-			_ => Err(EvaluatorError::InvalidPrefixExpressionError(Some(
-				Token::MINUS,
-			))),
+			_ => Err(EvaluatorError::InvalidPrefixExpressionError(
+				Some(TokenKind::MINUS),
+				operator.location,
+			)),
 		},
-		Token::NOT => match symbol {
+		TokenKind::NOT => match symbol {
 			Symbol::Boolean(value) => Ok(Rc::from(Symbol::Boolean(!value))),
-			_ => Err(EvaluatorError::InvalidPrefixExpressionError(Some(
-				Token::NOT,
-			))),
+			_ => Err(EvaluatorError::InvalidPrefixExpressionError(
+				Some(TokenKind::NOT),
+				operator.location,
+			)),
 		},
-		_ => Err(EvaluatorError::InvalidPrefixExpressionError(None)),
+		kind => Err(EvaluatorError::InvalidPrefixExpressionError(
+			Some(kind),
+			operator.location,
+		)),
 	}
 }
 
@@ -187,73 +192,102 @@ fn eval_infix_expression(
 	left: &Symbol,
 	right: &Symbol,
 ) -> Result<Rc<Symbol>, EvaluatorError> {
-	match operator {
-		Token::PLUS => match (left, right) {
+	match operator.kind {
+		TokenKind::PLUS => match (left, right) {
 			(Symbol::Integer(li), Symbol::Integer(ri)) => Ok(Rc::from(Symbol::Integer(li + ri))),
 			(Symbol::StringLiteral(ls), Symbol::StringLiteral(rs)) => {
 				Ok(Rc::from(Symbol::StringLiteral(ls.to_owned() + rs)))
 			}
-			_ => Err(EvaluatorError::InvalidInfixExpressionError(Some(
-				Token::PLUS,
-			))),
+			_ => Err(EvaluatorError::InvalidInfixExpressionError(
+				Some(TokenKind::PLUS),
+				operator.location,
+			)),
 		},
-		Token::MINUS => match (left, right) {
+		TokenKind::MINUS => match (left, right) {
 			(Symbol::Integer(li), Symbol::Integer(ri)) => Ok(Rc::from(Symbol::Integer(li - ri))),
-			_ => Err(EvaluatorError::InvalidInfixExpressionError(Some(
-				Token::MINUS,
-			))),
+			_ => Err(EvaluatorError::InvalidInfixExpressionError(
+				Some(TokenKind::MINUS),
+				operator.location,
+			)),
 		},
-		Token::MUL => match (left, right) {
+		TokenKind::MUL => match (left, right) {
 			(Symbol::Integer(li), Symbol::Integer(ri)) => Ok(Rc::from(Symbol::Integer(li * ri))),
-			_ => Err(EvaluatorError::InvalidInfixExpressionError(Some(
-				Token::MUL,
-			))),
+			_ => Err(EvaluatorError::InvalidInfixExpressionError(
+				Some(TokenKind::MUL),
+				operator.location,
+			)),
 		},
-		Token::DIV => match (left, right) {
+		TokenKind::DIV => match (left, right) {
 			(Symbol::Integer(li), Symbol::Integer(ri)) => Ok(Rc::from(Symbol::Integer(li / ri))),
-			_ => Err(EvaluatorError::InvalidInfixExpressionError(Some(
-				Token::DIV,
-			))),
+			_ => Err(EvaluatorError::InvalidInfixExpressionError(
+				Some(TokenKind::DIV),
+				operator.location,
+			)),
 		},
-		Token::LT => match (left, right) {
+		TokenKind::LT => match (left, right) {
 			(Symbol::Integer(li), Symbol::Integer(ri)) => Ok(Rc::from(Symbol::Boolean(li < ri))),
-			_ => Err(EvaluatorError::InvalidInfixExpressionError(Some(Token::LT))),
+			_ => Err(EvaluatorError::InvalidInfixExpressionError(
+				Some(TokenKind::LT),
+				operator.location,
+			)),
 		},
-		Token::GT => match (left, right) {
+		TokenKind::GT => match (left, right) {
 			(Symbol::Integer(li), Symbol::Integer(ri)) => Ok(Rc::from(Symbol::Boolean(li > ri))),
-			_ => Err(EvaluatorError::InvalidInfixExpressionError(Some(Token::GT))),
+			_ => Err(EvaluatorError::InvalidInfixExpressionError(
+				Some(TokenKind::GT),
+				operator.location,
+			)),
 		},
-		Token::LE => match (left, right) {
+		TokenKind::LE => match (left, right) {
 			(Symbol::Integer(li), Symbol::Integer(ri)) => Ok(Rc::from(Symbol::Boolean(li <= ri))),
-			_ => Err(EvaluatorError::InvalidInfixExpressionError(Some(Token::LE))),
+			_ => Err(EvaluatorError::InvalidInfixExpressionError(
+				Some(TokenKind::LE),
+				operator.location,
+			)),
 		},
-		Token::GE => match (left, right) {
+		TokenKind::GE => match (left, right) {
 			(Symbol::Integer(li), Symbol::Integer(ri)) => Ok(Rc::from(Symbol::Boolean(li >= ri))),
-			_ => Err(EvaluatorError::InvalidInfixExpressionError(Some(Token::GE))),
+			_ => Err(EvaluatorError::InvalidInfixExpressionError(
+				Some(TokenKind::GE),
+				operator.location,
+			)),
 		},
-		Token::EQ => match (left, right) {
+		TokenKind::EQ => match (left, right) {
 			(Symbol::Integer(li), Symbol::Integer(ri)) => Ok(Rc::from(Symbol::Boolean(li == ri))),
 			(Symbol::Boolean(lb), Symbol::Boolean(rb)) => Ok(Rc::from(Symbol::Boolean(lb == rb))),
 
-			_ => Err(EvaluatorError::InvalidInfixExpressionError(Some(Token::EQ))),
+			_ => Err(EvaluatorError::InvalidInfixExpressionError(
+				Some(TokenKind::EQ),
+				operator.location,
+			)),
 		},
-		Token::NE => match (left, right) {
+		TokenKind::NE => match (left, right) {
 			(Symbol::Integer(li), Symbol::Integer(ri)) => Ok(Rc::from(Symbol::Boolean(li != ri))),
 			(Symbol::Boolean(lb), Symbol::Boolean(rb)) => Ok(Rc::from(Symbol::Boolean(lb != rb))),
 
-			_ => Err(EvaluatorError::InvalidInfixExpressionError(Some(Token::NE))),
+			_ => Err(EvaluatorError::InvalidInfixExpressionError(
+				Some(TokenKind::NE),
+				operator.location,
+			)),
 		},
-		Token::AND => match (left, right) {
+		TokenKind::AND => match (left, right) {
 			(Symbol::Boolean(lb), Symbol::Boolean(rb)) => Ok(Rc::from(Symbol::Boolean(*lb && *rb))),
-			_ => Err(EvaluatorError::InvalidInfixExpressionError(Some(
-				Token::AND,
-			))),
+			_ => Err(EvaluatorError::InvalidInfixExpressionError(
+				Some(TokenKind::AND),
+				operator.location,
+			)),
 		},
-		Token::OR => match (left, right) {
+		TokenKind::OR => match (left, right) {
 			(Symbol::Boolean(lb), Symbol::Boolean(rb)) => Ok(Rc::from(Symbol::Boolean(*lb || *rb))),
-			_ => Err(EvaluatorError::InvalidInfixExpressionError(Some(Token::OR))),
+			_ => Err(EvaluatorError::InvalidInfixExpressionError(
+				Some(TokenKind::OR),
+				operator.location,
+			)),
 		},
-		_ => Err(EvaluatorError::InvalidInfixExpressionError(None)),
+		kind => Err(EvaluatorError::InvalidInfixExpressionError(
+			Some(kind),
+			operator.location,
+		)),
 	}
 }
 

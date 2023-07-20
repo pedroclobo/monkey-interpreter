@@ -1,35 +1,14 @@
-use crate::token::Token;
+pub use crate::error::LexerError;
+pub use crate::location::Location;
+pub use crate::token::{Token, TokenKind};
 
+pub mod error;
+mod location;
 mod tests;
 pub mod token;
 
-#[derive(Debug, PartialEq, Clone)]
-pub enum LexerError {
-	InvalidToken(String, String, usize, usize),
-	InvalidInteger(String, String, usize, usize),
-}
-
-impl std::fmt::Display for LexerError {
-	fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-		match self {
-			LexerError::InvalidToken(lexeme, file, line, column) => write!(
-				f,
-				"{}:{}:{} - Invalid lexeme: {}",
-				file, line, column, lexeme
-			),
-			LexerError::InvalidInteger(lexeme, file, line, column) => write!(
-				f,
-				"{}:{}:{} - Invalid Integer: {}",
-				file, line, column, lexeme
-			),
-		}
-	}
-}
-
 pub struct Lexer<'a> {
-	pub file: &'a str,
-	pub line: usize,
-	pub column: usize,
+	pub location: Location,
 
 	input: &'a str,
 	position: usize,
@@ -40,137 +19,158 @@ pub struct Lexer<'a> {
 impl<'a> Lexer<'a> {
 	pub fn new(input: &'a str, file: &'a str) -> Self {
 		let mut lex = Lexer {
+			location: Location::default(),
+
 			input,
-			file,
-			line: 0,
-			column: 0,
 			position: 0,
 			read_position: 0,
 			char: 0,
 		};
 
+		lex.location.file = file.to_string();
 		lex.read_char();
 
 		lex
 	}
 
 	pub fn next_token(&mut self) -> Result<Token, LexerError> {
+		let mut token: Token = Token::default();
+		token.location = self.location.clone();
+
 		match self.char {
 			b'=' => {
 				if self.peek_char() == b'=' {
 					self.read_char();
 					self.read_char();
-					Ok(Token::EQ)
+					token.kind = TokenKind::EQ;
+					Ok(token)
 				} else {
 					self.read_char();
-					Ok(Token::ASSIGN)
+					token.kind = TokenKind::ASSIGN;
+					Ok(token)
 				}
 			}
 			b'!' => {
 				if self.peek_char() == b'=' {
 					self.read_char();
 					self.read_char();
-					Ok(Token::NE)
+					token.kind = TokenKind::NE;
+					Ok(token)
 				} else {
 					self.read_char();
-					Ok(Token::NOT)
+					token.kind = TokenKind::NOT;
+					Ok(token)
 				}
 			}
 
 			b'+' => {
 				self.read_char();
-				Ok(Token::PLUS)
+				token.kind = TokenKind::PLUS;
+				Ok(token)
 			}
 			b'-' => {
 				self.read_char();
-				Ok(Token::MINUS)
+				token.kind = TokenKind::MINUS;
+				Ok(token)
 			}
 			b'*' => {
 				self.read_char();
-				Ok(Token::MUL)
+				token.kind = TokenKind::MUL;
+				Ok(token)
 			}
 			b'/' => {
 				self.read_char();
-				Ok(Token::DIV)
+				token.kind = TokenKind::DIV;
+				Ok(token)
 			}
 			b'<' => {
 				if self.peek_char() == b'=' {
 					self.read_char();
 					self.read_char();
-					Ok(Token::LE)
+					token.kind = TokenKind::LE;
+					Ok(token)
 				} else {
 					self.read_char();
-					Ok(Token::LT)
+					token.kind = TokenKind::LT;
+					Ok(token)
 				}
 			}
 			b'>' => {
 				if self.peek_char() == b'=' {
 					self.read_char();
 					self.read_char();
-					Ok(Token::GE)
+					token.kind = TokenKind::GE;
+					Ok(token)
 				} else {
 					self.read_char();
-					Ok(Token::GT)
+					token.kind = TokenKind::GT;
+					Ok(token)
 				}
 			}
 			b'&' => match self.peek_char() {
 				b'&' => {
 					self.read_char();
 					self.read_char();
-					Ok(Token::AND)
+					token.kind = TokenKind::AND;
+					Ok(token)
 				}
-				lex => Err(LexerError::InvalidToken(
+				lex => Err(LexerError::InvalidTokenSequenceError(
 					format!("&{}", lex as char),
-					self.file.to_string(),
-					self.line,
-					self.column,
+					self.location.clone(),
 				)),
 			},
 			b'|' => match self.peek_char() {
 				b'|' => {
 					self.read_char();
 					self.read_char();
-					Ok(Token::OR)
+					token.kind = TokenKind::OR;
+					Ok(token)
 				}
-				lex => Err(LexerError::InvalidToken(
+				lex => Err(LexerError::InvalidTokenSequenceError(
 					format!("|{}", lex as char),
-					self.file.to_string(),
-					self.line,
-					self.column,
+					self.location.clone(),
 				)),
 			},
 
 			b',' => {
 				self.read_char();
-				Ok(Token::COMMA)
+				token.kind = TokenKind::COMMA;
+				Ok(token)
 			}
 			b';' => {
 				self.read_char();
-				Ok(Token::SEMICOLON)
+				token.kind = TokenKind::SEMICOLON;
+				Ok(token)
 			}
 			b'(' => {
 				self.read_char();
-				Ok(Token::LPAREN)
+				token.kind = TokenKind::LPAREN;
+				Ok(token)
 			}
 			b')' => {
 				self.read_char();
-				Ok(Token::RPAREN)
+				token.kind = TokenKind::RPAREN;
+				Ok(token)
 			}
 			b'{' => {
 				self.read_char();
-				Ok(Token::LBRACE)
+				token.kind = TokenKind::LBRACE;
+				Ok(token)
 			}
 			b'}' => {
 				self.read_char();
-				Ok(Token::RBRACE)
+				token.kind = TokenKind::RBRACE;
+				Ok(token)
 			}
 			b'[' => {
 				self.read_char();
-				Ok(Token::LBRACKET)
+				token.kind = TokenKind::LBRACKET;
+				Ok(token)
 			}
 			b']' => {
 				self.read_char();
-				Ok(Token::RBRACKET)
+				token.kind = TokenKind::RBRACKET;
+				Ok(token)
 			}
 
 			b'0'..=b'9' => self.read_integer(),
@@ -184,13 +184,14 @@ impl<'a> Lexer<'a> {
 				self.next_token()
 			}
 
-			0 => Ok(Token::EOF),
+			0 => {
+				token.kind = TokenKind::EOF;
+				Ok(token)
+			}
 
-			lex => Err(LexerError::InvalidToken(
+			lex => Err(LexerError::InvalidTokenError(
 				format!("{}", lex as char),
-				self.file.to_string(),
-				self.line,
-				self.column,
+				self.location.clone(),
 			)),
 		}
 	}
@@ -203,10 +204,10 @@ impl<'a> Lexer<'a> {
 		}
 
 		if self.char == b'\n' {
-			self.line += 1;
-			self.column = 0;
+			self.location.line += 1;
+			self.location.column = 0;
 		} else {
-			self.column += 1;
+			self.location.column += 1;
 		}
 
 		self.position = self.read_position;
@@ -228,7 +229,10 @@ impl<'a> Lexer<'a> {
 		}
 
 		let identifier = &self.input[position..self.position];
-		Token::lookup_identifier(identifier)
+		Token {
+			kind: Token::lookup_identifier(identifier),
+			location: self.location.clone(),
+		}
 	}
 
 	fn read_integer(&mut self) -> Result<Token, LexerError> {
@@ -238,17 +242,21 @@ impl<'a> Lexer<'a> {
 		}
 
 		match &self.input[position..self.position].parse::<i32>() {
-			Ok(integer) => Ok(Token::INTEGER(*integer)),
-			Err(_) => Err(LexerError::InvalidInteger(
-				self.file.to_string(),
+			Ok(integer) => Ok(Token {
+				kind: TokenKind::INTEGER(*integer),
+				location: self.location.clone(),
+			}),
+			Err(_) => Err(LexerError::InvalidIntegerError(
 				self.input[position..self.position].to_string(),
-				self.line,
-				self.column,
+				self.location.clone(),
 			)),
 		}
 	}
 
 	fn read_string(&mut self) -> Token {
+		let mut token: Token = Default::default();
+		token.location = self.location.clone();
+
 		self.read_char(); // read the opening "
 
 		let position = self.position;
@@ -259,6 +267,7 @@ impl<'a> Lexer<'a> {
 		self.read_char(); // read the closing "
 
 		let string = &self.input[position..self.position - 1];
-		Token::STRING(string.to_string())
+		token.kind = TokenKind::STRING(string.to_string());
+		token
 	}
 }

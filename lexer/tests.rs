@@ -1,131 +1,202 @@
 #[cfg(test)]
 mod tests {
 	use Lexer;
-	use Token;
+	use LexerError;
+	use Location;
+	use TokenKind;
+
+	fn test(input: &str, expected: &Vec<TokenKind>) {
+		let mut lexer = Lexer::new(input, "test");
+
+		for expected_token in expected {
+			let token = lexer.next_token();
+			assert_eq!(token.unwrap().kind, *expected_token);
+		}
+	}
+
+	fn test_error(input: &Vec<&str>, expected: &Vec<LexerError>) {
+		for (input, expected) in input.iter().zip(expected.iter()) {
+			let mut lexer = Lexer::new(input, "test");
+			let output = lexer.next_token();
+
+			match output {
+				Ok(_) => continue,
+				Err(e) => assert_eq!(e, *expected),
+			}
+		}
+	}
 
 	#[test]
 	fn single_char_tokens() {
 		let input = "=+-*/<>!,;(){}[]";
 
-		let result = vec![
-			Token::ASSIGN,
-			Token::PLUS,
-			Token::MINUS,
-			Token::MUL,
-			Token::DIV,
-			Token::LT,
-			Token::GT,
-			Token::NOT,
-			Token::COMMA,
-			Token::SEMICOLON,
-			Token::LPAREN,
-			Token::RPAREN,
-			Token::LBRACE,
-			Token::RBRACE,
-			Token::LBRACKET,
-			Token::RBRACKET,
+		let expected = vec![
+			TokenKind::ASSIGN,
+			TokenKind::PLUS,
+			TokenKind::MINUS,
+			TokenKind::MUL,
+			TokenKind::DIV,
+			TokenKind::LT,
+			TokenKind::GT,
+			TokenKind::NOT,
+			TokenKind::COMMA,
+			TokenKind::SEMICOLON,
+			TokenKind::LPAREN,
+			TokenKind::RPAREN,
+			TokenKind::LBRACE,
+			TokenKind::RBRACE,
+			TokenKind::LBRACKET,
+			TokenKind::RBRACKET,
 		];
 
-		let mut lexer = Lexer::new(input, "single_char_tokens");
-
-		for (i, expected_token) in result.iter().enumerate() {
-			let token = lexer.next_token();
-			assert_eq!(token.unwrap(), *expected_token, "index: {}", i);
-		}
+		test(input, &expected);
 	}
 
 	#[test]
 	fn double_char_tokens() {
 		let input = "== != <= >= && ||";
 
-		let result = vec![
-			Token::EQ,
-			Token::NE,
-			Token::LE,
-			Token::GE,
-			Token::AND,
-			Token::OR,
+		let expected = vec![
+			TokenKind::EQ,
+			TokenKind::NE,
+			TokenKind::LE,
+			TokenKind::GE,
+			TokenKind::AND,
+			TokenKind::OR,
 		];
 
-		let mut lexer = Lexer::new(input, "double_char_tokens");
-
-		for (i, expected_token) in result.iter().enumerate() {
-			let token = lexer.next_token();
-			assert_eq!(token.unwrap(), *expected_token, "index: {}", i);
-		}
+		test(input, &expected);
 	}
 
 	#[test]
 	fn identifiers() {
 		let input = "five ten add";
 
-		let result = vec![
-			Token::IDENTIFIER("five".to_string()),
-			Token::IDENTIFIER("ten".to_string()),
-			Token::IDENTIFIER("add".to_string()),
+		let expected = vec![
+			TokenKind::IDENTIFIER("five".to_string()),
+			TokenKind::IDENTIFIER("ten".to_string()),
+			TokenKind::IDENTIFIER("add".to_string()),
 		];
 
-		let mut lexer = Lexer::new(input, "indentifiers");
-
-		for (i, expected_token) in result.iter().enumerate() {
-			let token = lexer.next_token();
-			assert_eq!(token.unwrap(), *expected_token, "index: {}", i);
-		}
+		test(input, &expected);
 	}
 
 	#[test]
 	fn keywords() {
 		let input = "fn let true false if else return";
 
-		let result = vec![
-			Token::FUNCTION,
-			Token::LET,
-			Token::TRUE,
-			Token::FALSE,
-			Token::IF,
+		let expected = vec![
+			TokenKind::FUNCTION,
+			TokenKind::LET,
+			TokenKind::TRUE,
+			TokenKind::FALSE,
+			TokenKind::IF,
 		];
 
-		let mut lexer = Lexer::new(input, "keywords");
-
-		for (i, expected_token) in result.iter().enumerate() {
-			let token = lexer.next_token();
-			assert_eq!(token.unwrap(), *expected_token, "index: {}", i);
-		}
+		test(input, &expected);
 	}
 
 	#[test]
 	fn integers() {
 		let input = "5 10 100 9999";
 
-		let result = vec![
-			Token::INTEGER(5),
-			Token::INTEGER(10),
-			Token::INTEGER(100),
-			Token::INTEGER(9999),
+		let expected = vec![
+			TokenKind::INTEGER(5),
+			TokenKind::INTEGER(10),
+			TokenKind::INTEGER(100),
+			TokenKind::INTEGER(9999),
 		];
 
-		let mut lexer = Lexer::new(input, "integers");
-
-		for (i, expected_token) in result.iter().enumerate() {
-			let token = lexer.next_token();
-			assert_eq!(token.unwrap(), *expected_token, "index: {}", i);
-		}
+		test(input, &expected);
 	}
 
 	#[test]
 	fn strings() {
 		let input = "\"hello\" \"world\"";
 
-		let result = vec![
-			Token::STRING("hello".to_string()),
-			Token::STRING("world".to_string()),
+		let expected = vec![
+			TokenKind::STRING("hello".to_string()),
+			TokenKind::STRING("world".to_string()),
 		];
 
-		let mut lexer = Lexer::new(input, "strings");
+		test(input, &expected);
+	}
 
-		for (i, expected_token) in result.iter().enumerate() {
-			let token = lexer.next_token();
-			assert_eq!(token.unwrap(), *expected_token, "index: {}", i);
-		}
+	#[test]
+	fn invalid_token() {
+		let inputs = vec!["let a = %", "x = `"];
+
+		let expected = vec![
+			LexerError::InvalidTokenError(
+				"%".to_string(),
+				Location {
+					file: "test".to_string(),
+					line: 1,
+					column: 9,
+				},
+			),
+			LexerError::InvalidTokenError(
+				"`".to_string(),
+				Location {
+					file: "test".to_string(),
+					line: 1,
+					column: 5,
+				},
+			),
+		];
+
+		test_error(&inputs, &expected);
+	}
+
+	#[test]
+	fn invalid_integer() {
+		let inputs = vec!["let a = 4a4", "x = 4.0"];
+
+		let expected = vec![
+			LexerError::InvalidIntegerError(
+				"%".to_string(),
+				Location {
+					file: "test".to_string(),
+					line: 1,
+					column: 9,
+				},
+			),
+			LexerError::InvalidIntegerError(
+				"`".to_string(),
+				Location {
+					file: "test".to_string(),
+					line: 1,
+					column: 5,
+				},
+			),
+		];
+
+		test_error(&inputs, &expected);
+	}
+
+	#[test]
+	fn invalid_token_sequence() {
+		let inputs = vec!["&|", "|-"];
+
+		let expected = vec![
+			LexerError::InvalidTokenSequenceError(
+				"&|".to_string(),
+				Location {
+					file: "test".to_string(),
+					line: 1,
+					column: 2,
+				},
+			),
+			LexerError::InvalidTokenSequenceError(
+				"|-".to_string(),
+				Location {
+					file: "test".to_string(),
+					line: 1,
+					column: 2,
+				},
+			),
+		];
+
+		test_error(&inputs, &expected);
 	}
 }

@@ -15,193 +15,250 @@ mod tests;
 
 type Env = Rc<RefCell<Environment>>;
 
-pub fn eval(node: Node, env: &Env) -> Rc<Symbol> {
-	match node {
-		Node::Program(Program { statements }) => eval_block(&statements, &Rc::clone(&env)),
-		Node::Statement(statement) => eval_statement(statement, &Rc::clone(&env)),
-		Node::Expression(expression) => eval_expression(expression, &Rc::clone(env)),
+#[derive(Debug)]
+pub enum EvaluatorError {
+	InvalidIndentifierError(String),
+	InvalidPrefixExpressionError(Option<Token>),
+	InvalidConditionError,
+	InvalidFunctionError,
+	InvalidInfixExpressionError(Option<Token>),
+}
+
+impl std::fmt::Display for EvaluatorError {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		use EvaluatorError::*;
+
+		match self {
+			InvalidIndentifierError(identifier) => {
+				write!(f, "identifier not found: {}", identifier)
+			}
+			InvalidPrefixExpressionError(token) => match token {
+				Some(token) => write!(f, "invalid prefix expression: {}", token),
+				None => write!(f, "invalid prefix expression"),
+			},
+			InvalidConditionError => write!(f, "invalid condition"),
+			InvalidFunctionError => write!(f, "invalid function"),
+			InvalidInfixExpressionError(token) => match token {
+				Some(token) => write!(f, "invalid infix expression: {}", token),
+				None => write!(f, "invalid infix expression"),
+			},
+		}
 	}
 }
 
-fn eval_statement(statement: Statement, env: &Env) -> Rc<Symbol> {
+pub fn eval(node: Node, env: &Env) -> Result<Rc<Symbol>, EvaluatorError> {
+	match node {
+		Node::Program(Program { statements }) => Ok(eval_block(&statements, &Rc::clone(&env))?),
+		Node::Statement(statement) => Ok(eval_statement(statement, &Rc::clone(&env))?),
+		Node::Expression(expression) => Ok(eval_expression(expression, &Rc::clone(env))?),
+	}
+}
+
+fn eval_statement(statement: Statement, env: &Env) -> Result<Rc<Symbol>, EvaluatorError> {
 	match statement {
 		Statement::LetStatement(ast::LetStatement {
 			identifier,
 			expression,
 		}) => {
-			let expression = eval(Node::Expression(expression), &Rc::clone(&env));
+			let expression = eval(Node::Expression(expression), &Rc::clone(&env))?;
 			env.borrow_mut()
 				.set(identifier.value, Rc::clone(&expression));
-			expression
+			Ok(expression)
 		}
-		Statement::ReturnStatement(ast::ReturnStatement { value }) => {
-			Rc::from(Symbol::ReturnValue(eval(Node::Expression(value), env)))
-		}
+		Statement::ReturnStatement(ast::ReturnStatement { value }) => Ok(Rc::from(
+			Symbol::ReturnValue(eval(Node::Expression(value), env)?),
+		)),
 		Statement::ExpressionStatement(ast::ExpressionStatement { expression }) => {
-			eval(Node::Expression(expression), env)
+			Ok(eval(Node::Expression(expression), env)?)
 		}
 		Statement::BlockStatement(ast::BlockStatement { statements }) => {
-			eval_block(&statements, &Rc::clone(&env))
+			Ok(eval_block(&statements, &Rc::clone(&env))?)
 		}
 	}
 }
 
-fn eval_expression(expression: Expression, env: &Env) -> Rc<Symbol> {
+fn eval_expression(expression: Expression, env: &Env) -> Result<Rc<Symbol>, EvaluatorError> {
 	match expression {
 		Expression::Identifier(ast::Identifier { value }) => match env.borrow().get(&value) {
-			Some(value) => Rc::clone(&value),
-			None => panic!("invalid identifier: {}", value),
+			Some(value) => Ok(Rc::clone(&value)),
+			None => Err(EvaluatorError::InvalidIndentifierError(value)),
 		},
 		Expression::IntegerLiteral(ast::IntegerLiteral { value }) => {
-			Rc::from(Symbol::Integer(value))
+			Ok(Rc::from(Symbol::Integer(value)))
 		}
-		Expression::Boolean(ast::Boolean { value }) => Rc::from(Symbol::Boolean(value)),
+		Expression::Boolean(ast::Boolean { value }) => Ok(Rc::from(Symbol::Boolean(value))),
 		Expression::StringLiteral(ast::StringLiteral { value }) => {
-			Rc::from(Symbol::StringLiteral(value))
+			Ok(Rc::from(Symbol::StringLiteral(value)))
 		}
 		Expression::FunctionLiteral(ast::FunctionLiteral { parameters, body }) => {
-			Rc::from(Symbol::FunctionLiteral { parameters, body })
+			Ok(Rc::from(Symbol::FunctionLiteral { parameters, body }))
 		}
 		Expression::UnaryExpression(ast::UnaryExpression { operator, right }) => {
-			let right = eval(Node::Expression(*right), env);
-			Rc::clone(&eval_prefix_expression(operator, &right))
+			let right = eval(Node::Expression(*right), env)?;
+			Ok(Rc::clone(&eval_prefix_expression(operator, &right)?))
 		}
 		Expression::BinaryExpression(ast::BinaryExpression {
 			left,
 			operator,
 			right,
 		}) => {
-			let left = eval(Node::Expression(*left), &Rc::clone(&env));
-			let right = eval(Node::Expression(*right), &Rc::clone(&env));
-			Rc::clone(&eval_infix_expression(operator, &left, &right))
+			let left = eval(Node::Expression(*left), &Rc::clone(&env))?;
+			let right = eval(Node::Expression(*right), &Rc::clone(&env))?;
+			Ok(Rc::clone(&eval_infix_expression(operator, &left, &right)?))
 		}
 		Expression::IfExpression(ast::IfExpression {
 			condition,
 			consequence,
 			alternative,
 		}) => {
-			let condition = eval(Node::Expression(*condition), &Rc::clone(&env));
+			let condition = eval(Node::Expression(*condition), &Rc::clone(&env))?;
 			match *condition {
 				Symbol::Boolean(true) => eval(
 					Node::Statement(Statement::BlockStatement(consequence)),
 					&Rc::clone(&env),
 				),
 				Symbol::Boolean(false) => match alternative {
-					Some(alternative) => {
-						eval(Node::Statement(Statement::BlockStatement(alternative)), env)
-					}
-					None => Rc::from(Symbol::Null),
+					Some(alternative) => Ok(eval(
+						Node::Statement(Statement::BlockStatement(alternative)),
+						env,
+					)?),
+					None => Ok(Rc::from(Symbol::Null)),
 				},
-				_ => panic!("invalid condition"),
+				_ => Err(EvaluatorError::InvalidConditionError),
 			}
 		}
 		Expression::FunctionCall(ast::FunctionCall {
 			function,
 			arguments,
 		}) => {
-			let function = eval(Node::Expression(*function), &Rc::clone(&env));
-			let arguments = eval_expressions(&arguments, &Rc::clone(&env));
+			let function = eval(Node::Expression(*function), &Rc::clone(&env))?;
+			let arguments = eval_expressions(&arguments, &Rc::clone(&env))?;
 
-			apply_function(&function, &arguments, &Rc::clone(&env))
+			Ok(apply_function(&function, &arguments, &Rc::clone(&env))?)
 		}
 	}
 }
 
-fn eval_block(statements: &Vec<Statement>, env: &Env) -> Rc<Symbol> {
+fn eval_block(statements: &Vec<Statement>, env: &Env) -> Result<Rc<Symbol>, EvaluatorError> {
 	let mut result = Rc::new(Symbol::Null);
 
 	for statement in statements {
-		result = eval(Node::Statement(statement.clone()), env);
+		result = eval(Node::Statement(statement.clone()), env)?;
 
 		match *result {
-			Symbol::ReturnValue(_) => return result,
+			Symbol::ReturnValue(_) => return Ok(result),
 			_ => continue,
 		}
 	}
 
-	result
+	Ok(result)
 }
 
-fn eval_expressions(expressions: &Vec<Expression>, env: &Env) -> Vec<Rc<Symbol>> {
+fn eval_expressions(
+	expressions: &Vec<Expression>,
+	env: &Env,
+) -> Result<Vec<Rc<Symbol>>, EvaluatorError> {
 	expressions
 		.iter()
 		.map(|expression| eval(Node::Expression(expression.clone()), env))
 		.collect()
 }
 
-fn eval_prefix_expression(operator: Token, symbol: &Symbol) -> Rc<Symbol> {
+fn eval_prefix_expression(operator: Token, symbol: &Symbol) -> Result<Rc<Symbol>, EvaluatorError> {
 	match operator {
 		Token::MINUS => match symbol {
-			Symbol::Integer(value) => Rc::from(Symbol::Integer(-value)),
-			_ => panic!("invalid minus operator expression"),
+			Symbol::Integer(value) => Ok(Rc::from(Symbol::Integer(-value))),
+			_ => Err(EvaluatorError::InvalidPrefixExpressionError(Some(
+				Token::MINUS,
+			))),
 		},
 		Token::NOT => match symbol {
-			Symbol::Boolean(value) => Rc::from(Symbol::Boolean(!value)),
-			_ => panic!("invalid not operator expression"),
+			Symbol::Boolean(value) => Ok(Rc::from(Symbol::Boolean(!value))),
+			_ => Err(EvaluatorError::InvalidPrefixExpressionError(Some(
+				Token::NOT,
+			))),
 		},
-		_ => panic!("invalid prefix operator"),
+		_ => Err(EvaluatorError::InvalidPrefixExpressionError(None)),
 	}
 }
 
-fn eval_infix_expression(operator: Token, left: &Symbol, right: &Symbol) -> Rc<Symbol> {
+fn eval_infix_expression(
+	operator: Token,
+	left: &Symbol,
+	right: &Symbol,
+) -> Result<Rc<Symbol>, EvaluatorError> {
 	match operator {
 		Token::PLUS => match (left, right) {
-			(Symbol::Integer(li), Symbol::Integer(ri)) => Rc::from(Symbol::Integer(li + ri)),
-			_ => panic!("invalid plus operator expression"),
+			(Symbol::Integer(li), Symbol::Integer(ri)) => Ok(Rc::from(Symbol::Integer(li + ri))),
+			_ => Err(EvaluatorError::InvalidInfixExpressionError(Some(
+				Token::PLUS,
+			))),
 		},
 		Token::MINUS => match (left, right) {
-			(Symbol::Integer(li), Symbol::Integer(ri)) => Rc::from(Symbol::Integer(li - ri)),
-			_ => panic!("invalid minus operator expression"),
+			(Symbol::Integer(li), Symbol::Integer(ri)) => Ok(Rc::from(Symbol::Integer(li - ri))),
+			_ => Err(EvaluatorError::InvalidInfixExpressionError(Some(
+				Token::MINUS,
+			))),
 		},
 		Token::MUL => match (left, right) {
-			(Symbol::Integer(li), Symbol::Integer(ri)) => Rc::from(Symbol::Integer(li * ri)),
-			_ => panic!("invalid mul operator expression"),
+			(Symbol::Integer(li), Symbol::Integer(ri)) => Ok(Rc::from(Symbol::Integer(li * ri))),
+			_ => Err(EvaluatorError::InvalidInfixExpressionError(Some(
+				Token::MUL,
+			))),
 		},
 		Token::DIV => match (left, right) {
-			(Symbol::Integer(li), Symbol::Integer(ri)) => Rc::from(Symbol::Integer(li / ri)),
-			_ => panic!("invalid div operator expression"),
+			(Symbol::Integer(li), Symbol::Integer(ri)) => Ok(Rc::from(Symbol::Integer(li / ri))),
+			_ => Err(EvaluatorError::InvalidInfixExpressionError(Some(
+				Token::DIV,
+			))),
 		},
 		Token::LT => match (left, right) {
-			(Symbol::Integer(li), Symbol::Integer(ri)) => Rc::from(Symbol::Boolean(li < ri)),
-			_ => panic!("invalid lt operator expression"),
+			(Symbol::Integer(li), Symbol::Integer(ri)) => Ok(Rc::from(Symbol::Boolean(li < ri))),
+			_ => Err(EvaluatorError::InvalidInfixExpressionError(Some(Token::LT))),
 		},
 		Token::GT => match (left, right) {
-			(Symbol::Integer(li), Symbol::Integer(ri)) => Rc::from(Symbol::Boolean(li > ri)),
-			_ => panic!("invalid gt operator expression"),
+			(Symbol::Integer(li), Symbol::Integer(ri)) => Ok(Rc::from(Symbol::Boolean(li > ri))),
+			_ => Err(EvaluatorError::InvalidInfixExpressionError(Some(Token::GT))),
 		},
 		Token::LE => match (left, right) {
-			(Symbol::Integer(li), Symbol::Integer(ri)) => Rc::from(Symbol::Boolean(li <= ri)),
-			_ => panic!("invalid le operator expression"),
+			(Symbol::Integer(li), Symbol::Integer(ri)) => Ok(Rc::from(Symbol::Boolean(li <= ri))),
+			_ => Err(EvaluatorError::InvalidInfixExpressionError(Some(Token::LE))),
 		},
 		Token::GE => match (left, right) {
-			(Symbol::Integer(li), Symbol::Integer(ri)) => Rc::from(Symbol::Boolean(li >= ri)),
-			_ => panic!("invalid ge operator expression"),
+			(Symbol::Integer(li), Symbol::Integer(ri)) => Ok(Rc::from(Symbol::Boolean(li >= ri))),
+			_ => Err(EvaluatorError::InvalidInfixExpressionError(Some(Token::GE))),
 		},
 		Token::EQ => match (left, right) {
-			(Symbol::Integer(li), Symbol::Integer(ri)) => Rc::from(Symbol::Boolean(li == ri)),
-			(Symbol::Boolean(lb), Symbol::Boolean(rb)) => Rc::from(Symbol::Boolean(lb == rb)),
+			(Symbol::Integer(li), Symbol::Integer(ri)) => Ok(Rc::from(Symbol::Boolean(li == ri))),
+			(Symbol::Boolean(lb), Symbol::Boolean(rb)) => Ok(Rc::from(Symbol::Boolean(lb == rb))),
 
-			_ => panic!("invalid eq operator expression"),
+			_ => Err(EvaluatorError::InvalidInfixExpressionError(Some(Token::EQ))),
 		},
 		Token::NE => match (left, right) {
-			(Symbol::Integer(li), Symbol::Integer(ri)) => Rc::from(Symbol::Boolean(li != ri)),
-			(Symbol::Boolean(lb), Symbol::Boolean(rb)) => Rc::from(Symbol::Boolean(lb != rb)),
+			(Symbol::Integer(li), Symbol::Integer(ri)) => Ok(Rc::from(Symbol::Boolean(li != ri))),
+			(Symbol::Boolean(lb), Symbol::Boolean(rb)) => Ok(Rc::from(Symbol::Boolean(lb != rb))),
 
-			_ => panic!("invalid ne operator expression"),
+			_ => Err(EvaluatorError::InvalidInfixExpressionError(Some(Token::NE))),
 		},
 		Token::AND => match (left, right) {
-			(Symbol::Boolean(lb), Symbol::Boolean(rb)) => Rc::from(Symbol::Boolean(*lb && *rb)),
-			_ => panic!("invalid and operator expression"),
+			(Symbol::Boolean(lb), Symbol::Boolean(rb)) => Ok(Rc::from(Symbol::Boolean(*lb && *rb))),
+			_ => Err(EvaluatorError::InvalidInfixExpressionError(Some(
+				Token::AND,
+			))),
 		},
 		Token::OR => match (left, right) {
-			(Symbol::Boolean(lb), Symbol::Boolean(rb)) => Rc::from(Symbol::Boolean(*lb || *rb)),
-			_ => panic!("invalid and operator expression"),
+			(Symbol::Boolean(lb), Symbol::Boolean(rb)) => Ok(Rc::from(Symbol::Boolean(*lb || *rb))),
+			_ => Err(EvaluatorError::InvalidInfixExpressionError(Some(Token::OR))),
 		},
-		_ => panic!("invalid infix operator"),
+		_ => Err(EvaluatorError::InvalidInfixExpressionError(None)),
 	}
 }
 
-fn apply_function(function: &Symbol, arguments: &Vec<Rc<Symbol>>, env: &Env) -> Rc<Symbol> {
+fn apply_function(
+	function: &Symbol,
+	arguments: &Vec<Rc<Symbol>>,
+	env: &Env,
+) -> Result<Rc<Symbol>, EvaluatorError> {
 	match function {
 		Symbol::FunctionLiteral { parameters, body } => {
 			let mut enclosing_env = Environment::new_enclosed(Rc::clone(&env));
@@ -212,18 +269,18 @@ fn apply_function(function: &Symbol, arguments: &Vec<Rc<Symbol>>, env: &Env) -> 
 			let evaluated = eval(
 				Node::Statement(Statement::BlockStatement(body.clone())),
 				&Rc::new(RefCell::new(enclosing_env)),
-			);
+			)?;
 
-			Rc::clone(&unwrap_return_value(evaluated))
+			Ok(Rc::clone(&(unwrap_return_value(evaluated)?)))
 		}
-		_ => panic!("invalid function"),
+		_ => Err(EvaluatorError::InvalidFunctionError),
 	}
 }
 
-fn unwrap_return_value(symbol: Rc<Symbol>) -> Rc<Symbol> {
+fn unwrap_return_value(symbol: Rc<Symbol>) -> Result<Rc<Symbol>, EvaluatorError> {
 	if let Symbol::ReturnValue(value) = symbol.as_ref() {
-		Rc::clone(&value)
+		Ok(Rc::clone(&value))
 	} else {
-		symbol
+		Ok(symbol)
 	}
 }

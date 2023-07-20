@@ -25,7 +25,10 @@ mod tests {
 			let env = Rc::new(RefCell::new(Environment::new()));
 			let program = Node::Program(program);
 
-			assert_eq!(*eval(program, &env), *symbol);
+			match eval(program, &env) {
+				Ok(result) => assert_eq!(*result, *symbol),
+				Err(_) => assert!(false),
+			}
 		}
 	}
 

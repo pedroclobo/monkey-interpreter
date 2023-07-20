@@ -45,7 +45,10 @@ fn main() {
 		};
 
 		let program = ast::Node::Program(program);
-		println!("{}", eval(program, &env));
+		match eval(program, &env) {
+			Ok(value) => println!("{}", value),
+			Err(e) => eprintln!("{}", e),
+		}
 		println!();
 	}
 }

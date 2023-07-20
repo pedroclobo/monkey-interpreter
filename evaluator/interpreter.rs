@@ -39,5 +39,8 @@ fn main() {
 	};
 
 	let env = Rc::new(RefCell::new(Environment::new()));
-	println!("{}", eval(ast::Node::Program(program), &env));
+	match eval(ast::Node::Program(program), &env) {
+		Ok(value) => println!("{}", value),
+		Err(e) => eprintln!("{}", e),
+	}
 }

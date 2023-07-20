@@ -20,6 +20,12 @@ Go](https://interpreterbook.com/). The language has:
 
 ## Quick Start
 ```bash
+# lexer
+$ cargo run --release --bin lexer
+
+# parser
+$ cargo run --release --bin parser
+
 # repl
 $ cargo run --release --bin repl
 

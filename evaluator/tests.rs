@@ -27,7 +27,7 @@ mod tests {
 
 			match eval(program, &env) {
 				Ok(result) => assert_eq!(*result, *symbol),
-				Err(_) => assert!(false),
+				Err(e) => panic!("{}", e),
 			}
 		}
 	}
@@ -93,6 +93,7 @@ mod tests {
 			"3 < 5 == false;",
 			"true || false && true;",
 			"true && false || true;",
+			"\"hello \" + \"world\"",
 		];
 		let expected = vec![
 			Symbol::Integer(10),
@@ -112,6 +113,7 @@ mod tests {
 			Symbol::Boolean(false),
 			Symbol::Boolean(true),
 			Symbol::Boolean(true),
+			Symbol::StringLiteral("hello world".to_string()),
 		];
 
 		test(&input, &expected);

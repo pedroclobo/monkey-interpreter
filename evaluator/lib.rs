@@ -190,6 +190,9 @@ fn eval_infix_expression(
 	match operator {
 		Token::PLUS => match (left, right) {
 			(Symbol::Integer(li), Symbol::Integer(ri)) => Ok(Rc::from(Symbol::Integer(li + ri))),
+			(Symbol::StringLiteral(ls), Symbol::StringLiteral(rs)) => {
+				Ok(Rc::from(Symbol::StringLiteral(ls.to_owned() + rs)))
+			}
 			_ => Err(EvaluatorError::InvalidInfixExpressionError(Some(
 				Token::PLUS,
 			))),

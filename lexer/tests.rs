@@ -2,9 +2,36 @@
 mod tests {
 	use Lexer;
 	use LexerError;
+	use LexerError::*;
 	use Location;
 	use Token;
-	use TokenKind;
+	use TokenKind::*;
+
+	macro_rules! token {
+		($kind:expr, $line:expr, $column:expr) => {
+			Token {
+				kind: $kind,
+				location: Location {
+					file: "test".to_string(),
+					line: $line,
+					column: $column,
+				},
+			}
+		};
+	}
+
+	macro_rules! error {
+		($kind:ident, $lexeme:expr, $line:expr, $column:expr) => {
+			$kind(
+				$lexeme.to_string(),
+				Location {
+					file: "test".to_string(),
+					line: $line,
+					column: $column,
+				},
+			)
+		};
+	}
 
 	fn test(input: &str, expected: &Vec<Token>) {
 		let mut lexer = Lexer::new(input, "test");
@@ -32,134 +59,22 @@ mod tests {
 		let input = "=+-*/<>!,;(){}[]";
 
 		let expected = vec![
-			Token {
-				kind: TokenKind::ASSIGN,
-				location: Location {
-					file: "test".to_string(),
-					line: 1,
-					column: 1,
-				},
-			},
-			Token {
-				kind: TokenKind::PLUS,
-				location: Location {
-					file: "test".to_string(),
-					line: 1,
-					column: 2,
-				},
-			},
-			Token {
-				kind: TokenKind::MINUS,
-				location: Location {
-					file: "test".to_string(),
-					line: 1,
-					column: 3,
-				},
-			},
-			Token {
-				kind: TokenKind::MUL,
-				location: Location {
-					file: "test".to_string(),
-					line: 1,
-					column: 4,
-				},
-			},
-			Token {
-				kind: TokenKind::DIV,
-				location: Location {
-					file: "test".to_string(),
-					line: 1,
-					column: 5,
-				},
-			},
-			Token {
-				kind: TokenKind::LT,
-				location: Location {
-					file: "test".to_string(),
-					line: 1,
-					column: 6,
-				},
-			},
-			Token {
-				kind: TokenKind::GT,
-				location: Location {
-					file: "test".to_string(),
-					line: 1,
-					column: 7,
-				},
-			},
-			Token {
-				kind: TokenKind::NOT,
-				location: Location {
-					file: "test".to_string(),
-					line: 1,
-					column: 8,
-				},
-			},
-			Token {
-				kind: TokenKind::COMMA,
-				location: Location {
-					file: "test".to_string(),
-					line: 1,
-					column: 9,
-				},
-			},
-			Token {
-				kind: TokenKind::SEMICOLON,
-				location: Location {
-					file: "test".to_string(),
-					line: 1,
-					column: 10,
-				},
-			},
-			Token {
-				kind: TokenKind::LPAREN,
-				location: Location {
-					file: "test".to_string(),
-					line: 1,
-					column: 11,
-				},
-			},
-			Token {
-				kind: TokenKind::RPAREN,
-				location: Location {
-					file: "test".to_string(),
-					line: 1,
-					column: 12,
-				},
-			},
-			Token {
-				kind: TokenKind::LBRACE,
-				location: Location {
-					file: "test".to_string(),
-					line: 1,
-					column: 13,
-				},
-			},
-			Token {
-				kind: TokenKind::RBRACE,
-				location: Location {
-					file: "test".to_string(),
-					line: 1,
-					column: 14,
-				},
-			},
-			Token {
-				kind: TokenKind::LBRACKET,
-				location: Location {
-					file: "test".to_string(),
-					line: 1,
-					column: 15,
-				},
-			},
-			Token {
-				kind: TokenKind::RBRACKET,
-				location: Location {
-					file: "test".to_string(),
-					line: 1,
-					column: 16,
-				},
-			},
+			token!(ASSIGN, 1, 1),
+			token!(PLUS, 1, 2),
+			token!(MINUS, 1, 3),
+			token!(MUL, 1, 4),
+			token!(DIV, 1, 5),
+			token!(LT, 1, 6),
+			token!(GT, 1, 7),
+			token!(NOT, 1, 8),
+			token!(COMMA, 1, 9),
+			token!(SEMICOLON, 1, 10),
+			token!(LPAREN, 1, 11),
+			token!(RPAREN, 1, 12),
+			token!(LBRACE, 1, 13),
+			token!(RBRACE, 1, 14),
+			token!(LBRACKET, 1, 15),
+			token!(RBRACKET, 1, 16),
 		];
 
 		test(input, &expected);
@@ -170,54 +85,12 @@ mod tests {
 		let input = "== != <= >= && ||";
 
 		let expected = vec![
-			Token {
-				kind: TokenKind::EQ,
-				location: Location {
-					file: "test".to_string(),
-					line: 1,
-					column: 1,
-				},
-			},
-			Token {
-				kind: TokenKind::NE,
-				location: Location {
-					file: "test".to_string(),
-					line: 1,
-					column: 4,
-				},
-			},
-			Token {
-				kind: TokenKind::LE,
-				location: Location {
-					file: "test".to_string(),
-					line: 1,
-					column: 7,
-				},
-			},
-			Token {
-				kind: TokenKind::GE,
-				location: Location {
-					file: "test".to_string(),
-					line: 1,
-					column: 10,
-				},
-			},
-			Token {
-				kind: TokenKind::AND,
-				location: Location {
-					file: "test".to_string(),
-					line: 1,
-					column: 13,
-				},
-			},
-			Token {
-				kind: TokenKind::OR,
-				location: Location {
-					file: "test".to_string(),
-					line: 1,
-					column: 16,
-				},
-			},
+			token!(EQ, 1, 1),
+			token!(NE, 1, 4),
+			token!(LE, 1, 7),
+			token!(GE, 1, 10),
+			token!(AND, 1, 13),
+			token!(OR, 1, 16),
 		];
 
 		test(input, &expected);
@@ -228,30 +101,9 @@ mod tests {
 		let input = "five ten add";
 
 		let expected = vec![
-			Token {
-				kind: TokenKind::IDENTIFIER("five".to_string()),
-				location: Location {
-					file: "test".to_string(),
-					line: 1,
-					column: 1,
-				},
-			},
-			Token {
-				kind: TokenKind::IDENTIFIER("ten".to_string()),
-				location: Location {
-					file: "test".to_string(),
-					line: 1,
-					column: 6,
-				},
-			},
-			Token {
-				kind: TokenKind::IDENTIFIER("add".to_string()),
-				location: Location {
-					file: "test".to_string(),
-					line: 1,
-					column: 10,
-				},
-			},
+			token!(IDENTIFIER("five".to_string()), 1, 1),
+			token!(IDENTIFIER("ten".to_string()), 1, 6),
+			token!(IDENTIFIER("add".to_string()), 1, 10),
 		];
 
 		test(input, &expected);
@@ -262,62 +114,13 @@ mod tests {
 		let input = "fn let true false if else return";
 
 		let expected = vec![
-			Token {
-				kind: TokenKind::FUNCTION,
-				location: Location {
-					file: "test".to_string(),
-					line: 1,
-					column: 1,
-				},
-			},
-			Token {
-				kind: TokenKind::LET,
-				location: Location {
-					file: "test".to_string(),
-					line: 1,
-					column: 4,
-				},
-			},
-			Token {
-				kind: TokenKind::TRUE,
-				location: Location {
-					file: "test".to_string(),
-					line: 1,
-					column: 8,
-				},
-			},
-			Token {
-				kind: TokenKind::FALSE,
-				location: Location {
-					file: "test".to_string(),
-					line: 1,
-					column: 13,
-				},
-			},
-			Token {
-				kind: TokenKind::IF,
-				location: Location {
-					file: "test".to_string(),
-					line: 1,
-					column: 19,
-				},
-			},
-			Token {
-				kind: TokenKind::ELSE,
-				location: Location {
-					file: "test".to_string(),
-					line: 1,
-					column: 22,
-				},
-			},
-			Token {
-				kind: TokenKind::RETURN,
-				location: Location {
-					file: "test".to_string(),
-					line: 1,
-					column: 27,
-				},
-			},
+			token!(FUNCTION, 1, 1),
+			token!(LET, 1, 4),
+			token!(TRUE, 1, 8),
+			token!(FALSE, 1, 13),
+			token!(IF, 1, 19),
+			token!(ELSE, 1, 22),
+			token!(RETURN, 1, 27),
 		];
 
 		test(input, &expected);
@@ -328,38 +131,10 @@ mod tests {
 		let input = "5 10 100 9999";
 
 		let expected = vec![
-			Token {
-				kind: TokenKind::INTEGER(5),
-				location: Location {
-					file: "test".to_string(),
-					line: 1,
-					column: 1,
-				},
-			},
-			Token {
-				kind: TokenKind::INTEGER(10),
-				location: Location {
-					file: "test".to_string(),
-					line: 1,
-					column: 3,
-				},
-			},
-			Token {
-				kind: TokenKind::INTEGER(100),
-				location: Location {
-					file: "test".to_string(),
-					line: 1,
-					column: 6,
-				},
-			},
-			Token {
-				kind: TokenKind::INTEGER(9999),
-				location: Location {
-					file: "test".to_string(),
-					line: 1,
-					column: 10,
-				},
-			},
+			token!(INTEGER(5), 1, 1),
+			token!(INTEGER(10), 1, 3),
+			token!(INTEGER(100), 1, 6),
+			token!(INTEGER(9999), 1, 10),
 		];
 
 		test(input, &expected);
@@ -370,22 +145,8 @@ mod tests {
 		let input = "\"hello\" \"world\"";
 
 		let expected = vec![
-			Token {
-				kind: TokenKind::STRING("hello".to_string()),
-				location: Location {
-					file: "test".to_string(),
-					line: 1,
-					column: 1,
-				},
-			},
-			Token {
-				kind: TokenKind::STRING("world".to_string()),
-				location: Location {
-					file: "test".to_string(),
-					line: 1,
-					column: 9,
-				},
-			},
+			token!(STRING("hello".to_string()), 1, 1),
+			token!(STRING("world".to_string()), 1, 9),
 		];
 
 		test(input, &expected);
@@ -397,64 +158,15 @@ mod tests {
 
 		let expected = vec![
 			vec![
-				Ok(Token {
-					kind: TokenKind::LET,
-					location: Location {
-						file: "test".to_string(),
-						line: 1,
-						column: 1,
-					},
-				}),
-				Ok(Token {
-					kind: TokenKind::IDENTIFIER("a".to_string()),
-					location: Location {
-						file: "test".to_string(),
-						line: 1,
-						column: 5,
-					},
-				}),
-				Ok(Token {
-					kind: TokenKind::ASSIGN,
-					location: Location {
-						file: "test".to_string(),
-						line: 1,
-						column: 7,
-					},
-				}),
-				Err(LexerError::InvalidTokenError(
-					"%".to_string(),
-					Location {
-						file: "test".to_string(),
-						line: 1,
-						column: 9,
-					},
-				)),
+				Ok(token!(LET, 1, 1)),
+				Ok(token!(IDENTIFIER("a".to_string()), 1, 5)),
+				Ok(token!(ASSIGN, 1, 7)),
+				Err(error!(InvalidTokenError, "%", 1, 9)),
 			],
 			vec![
-				Ok(Token {
-					kind: TokenKind::IDENTIFIER("x".to_string()),
-					location: Location {
-						file: "test".to_string(),
-						line: 1,
-						column: 1,
-					},
-				}),
-				Ok(Token {
-					kind: TokenKind::ASSIGN,
-					location: Location {
-						file: "test".to_string(),
-						line: 1,
-						column: 3,
-					},
-				}),
-				Err(LexerError::InvalidTokenError(
-					"`".to_string(),
-					Location {
-						file: "test".to_string(),
-						line: 1,
-						column: 5,
-					},
-				)),
+				Ok(token!(IDENTIFIER("x".to_string()), 1, 1)),
+				Ok(token!(ASSIGN, 1, 3)),
+				Err(error!(InvalidTokenError, "`", 1, 5)),
 			],
 		];
 
@@ -467,56 +179,14 @@ mod tests {
 
 		let expected = vec![
 			vec![
-				Ok(Token {
-					kind: TokenKind::FALSE,
-					location: Location {
-						file: "test".to_string(),
-						line: 1,
-						column: 1,
-					},
-				}),
-				Err(LexerError::InvalidTokenSequenceError(
-					"&|".to_string(),
-					Location {
-						file: "test".to_string(),
-						line: 1,
-						column: 7,
-					},
-				)),
+				Ok(token!(FALSE, 1, 1)),
+				Err(error!(InvalidTokenSequenceError, "&|", 1, 7)),
 			],
 			vec![
-				Ok(Token {
-					kind: TokenKind::LET,
-					location: Location {
-						file: "test".to_string(),
-						line: 1,
-						column: 1,
-					},
-				}),
-				Ok(Token {
-					kind: TokenKind::IDENTIFIER("a".to_string()),
-					location: Location {
-						file: "test".to_string(),
-						line: 1,
-						column: 5,
-					},
-				}),
-				Ok(Token {
-					kind: TokenKind::ASSIGN,
-					location: Location {
-						file: "test".to_string(),
-						line: 1,
-						column: 7,
-					},
-				}),
-				Err(LexerError::InvalidTokenSequenceError(
-					"|-".to_string(),
-					Location {
-						file: "test".to_string(),
-						line: 1,
-						column: 9,
-					},
-				)),
+				Ok(token!(LET, 1, 1)),
+				Ok(token!(IDENTIFIER("a".to_string()), 1, 5)),
+				Ok(token!(ASSIGN, 1, 7)),
+				Err(error!(InvalidTokenSequenceError, "|-", 1, 9)),
 			],
 		];
 

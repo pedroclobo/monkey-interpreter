@@ -98,19 +98,6 @@ impl Token {
 			location: Location::default(),
 		}
 	}
-
-	pub fn lookup_identifier(identifier: &str) -> TokenKind {
-		match identifier {
-			"fn" => TokenKind::FUNCTION,
-			"let" => TokenKind::LET,
-			"true" => TokenKind::TRUE,
-			"false" => TokenKind::FALSE,
-			"if" => TokenKind::IF,
-			"else" => TokenKind::ELSE,
-			"return" => TokenKind::RETURN,
-			_ => TokenKind::IDENTIFIER(identifier.to_string()),
-		}
-	}
 }
 
 impl Default for Token {

@@ -230,7 +230,16 @@ impl<'a> Lexer<'a> {
 		}
 
 		let identifier = &self.input[position..self.position];
-		token.kind = Token::lookup_identifier(identifier);
+		token.kind = match identifier {
+			"fn" => TokenKind::FUNCTION,
+			"let" => TokenKind::LET,
+			"true" => TokenKind::TRUE,
+			"false" => TokenKind::FALSE,
+			"if" => TokenKind::IF,
+			"else" => TokenKind::ELSE,
+			"return" => TokenKind::RETURN,
+			_ => TokenKind::IDENTIFIER(identifier.to_string()),
+		};
 
 		token
 	}

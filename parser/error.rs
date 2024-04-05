@@ -9,7 +9,7 @@ pub enum ParserError {
 impl std::fmt::Display for ParserError {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
-            ParserError::LexerError(l) => write!(f, "{}", l.to_string()),
+            ParserError::LexerError(l) => write!(f, "{}", l),
             ParserError::ExpectedError(expected, location) => {
                 write!(f, "{} - PARSER ERROR: Expected {}", location, expected)
             }

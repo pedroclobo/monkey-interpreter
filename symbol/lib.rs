@@ -38,7 +38,7 @@ impl std::fmt::Display for Symbol {
                         .map(|i| i.to_string())
                         .collect::<Vec<String>>()
                         .join(", "),
-                    body.to_string()
+                    body
                 )
             }
         }

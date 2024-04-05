@@ -77,9 +77,9 @@ pub struct Identifier {
 impl std::fmt::Display for Node {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Node::Program(p) => write!(f, "{}", p.to_string()),
-            Node::Statement(s) => write!(f, "{}", s.to_string()),
-            Node::Expression(e) => write!(f, "{}", e.to_string()),
+            Node::Program(p) => write!(f, "{}", p),
+            Node::Statement(s) => write!(f, "{}", s),
+            Node::Expression(e) => write!(f, "{}", e),
         }
     }
 }
@@ -100,17 +100,12 @@ impl std::fmt::Display for Statement {
             Statement::Let {
                 identifier,
                 expression,
-            } => write!(
-                f,
-                "tLET({}, {})",
-                identifier.value.to_string(),
-                expression.to_string()
-            ),
-            Statement::Return { value } => write!(f, "tRETURN({})", value.to_string()),
+            } => write!(f, "tLET({}, {})", identifier.value, expression),
+            Statement::Return { value } => write!(f, "tRETURN({})", value),
             Statement::Expression { expression } => {
-                write!(f, "{}", expression.to_string())
+                write!(f, "{}", expression)
             }
-            Statement::Block { block } => write!(f, "{}", block.to_string()),
+            Statement::Block { block } => write!(f, "{}", block),
         }
     }
 }
@@ -118,10 +113,10 @@ impl std::fmt::Display for Statement {
 impl std::fmt::Display for Expression {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Expression::Identifier(id) => write!(f, "{}", id.value.to_string()),
-            Expression::IntegerLiteral { value } => write!(f, "{}", value.to_string()),
-            Expression::BooleanLiteral { value } => write!(f, "{}", value.to_string()),
-            Expression::StringLiteral { value } => write!(f, "{}", value.to_string()),
+            Expression::Identifier(id) => write!(f, "{}", id.value),
+            Expression::IntegerLiteral { value } => write!(f, "{}", value),
+            Expression::BooleanLiteral { value } => write!(f, "{}", value),
+            Expression::StringLiteral { value } => write!(f, "{}", value),
             Expression::FunctionLiteral { parameters, body } => write!(
                 f,
                 "tFUNCTION({}) {{{}}}",
@@ -137,19 +132,13 @@ impl std::fmt::Display for Expression {
                     .join(""),
             ),
             Expression::Unary { operator, operand } => {
-                write!(f, "{}({})", operator.to_string(), operand.to_string())
+                write!(f, "{}({})", operator, operand)
             }
             Expression::Binary {
                 operator,
                 left,
                 right,
-            } => write!(
-                f,
-                "({} {} {})",
-                left.to_string(),
-                operator.to_string(),
-                right.to_string()
-            ),
+            } => write!(f, "({} {} {})", left, operator, right),
             Expression::If {
                 condition,
                 consequence,
@@ -172,7 +161,7 @@ impl std::fmt::Display for Expression {
                 write!(
                     f,
                     "tIF {} {{{}}}{}",
-                    condition.to_string(),
+                    condition,
                     consequence
                         .statements
                         .iter()
@@ -188,7 +177,7 @@ impl std::fmt::Display for Expression {
             } => write!(
                 f,
                 "tCALL({}, ({}))",
-                function.to_string(),
+                function,
                 arguments
                     .iter()
                     .map(|arg| arg.to_string())
@@ -201,6 +190,6 @@ impl std::fmt::Display for Expression {
 
 impl std::fmt::Display for Identifier {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.value.to_string())
+        write!(f, "{}", self.value)
     }
 }

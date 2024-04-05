@@ -29,7 +29,7 @@ fn main() {
         };
 
         match parser.parse_program() {
-            Ok(program) => println!("{}", program.to_string()),
+            Ok(program) => println!("{}", program),
             Err(e) => eprintln!("{}", e),
         };
 

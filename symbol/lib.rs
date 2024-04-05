@@ -14,7 +14,7 @@ pub enum Symbol {
     ReturnValue(Rc<Symbol>),
     FunctionLiteral {
         parameters: Vec<ast::Identifier>,
-        body: ast::BlockStatement,
+        block: ast::Block,
     },
 }
 
@@ -26,7 +26,10 @@ impl std::fmt::Display for Symbol {
             Symbol::StringLiteral(value) => write!(f, "{}", value),
             Symbol::Null => write!(f, "NULL"),
             Symbol::ReturnValue(value) => write!(f, "{}", value),
-            Symbol::FunctionLiteral { parameters, body } => {
+            Symbol::FunctionLiteral {
+                parameters,
+                block: body,
+            } => {
                 write!(
                     f,
                     "fn({}) {{\n{}\n}}",

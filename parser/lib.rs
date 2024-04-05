@@ -2,11 +2,7 @@ pub extern crate lexer;
 
 pub mod ast;
 
-use ast::{
-    BinaryExpression, BlockStatement, Boolean, Expression, ExpressionStatement, FunctionCall,
-    FunctionLiteral, Identifier, IfExpression, IntegerLiteral, LetStatement, Program,
-    ReturnStatement, Statement, StringLiteral, UnaryExpression,
-};
+use ast::{Expression, Identifier, Program, Statement};
 use lexer::{Lexer, Token, TokenKind};
 
 mod error;
@@ -119,9 +115,7 @@ impl<'a, 'b> Parser<'a, 'b> {
             self.next_token()?;
         };
 
-        Ok(Statement::ExpressionStatement(ExpressionStatement {
-            expression,
-        }))
+        Ok(Statement::Expression { expression })
     }
 
     fn parse_expression(&mut self, precedence: u32) -> Result<Expression, ParserError> {
@@ -174,12 +168,12 @@ impl<'a, 'b> Parser<'a, 'b> {
     fn parse_unary_expression(&mut self) -> Result<Expression, ParserError> {
         let operator = self.curr_token.clone();
         self.next_token()?;
-        let right = self.parse_expression(self.precedence(TokenKind::UNARY))?;
+        let operand = self.parse_expression(self.precedence(TokenKind::UNARY))?;
 
-        Ok(Expression::UnaryExpression(UnaryExpression {
+        Ok(Expression::Unary {
             operator,
-            right: Box::new(right),
-        }))
+            operand: Box::new(operand),
+        })
     }
 
     fn parse_binary_expression(&mut self, left: Expression) -> Result<Expression, ParserError> {
@@ -188,11 +182,11 @@ impl<'a, 'b> Parser<'a, 'b> {
         self.next_token()?;
         let right = self.parse_expression(precedence)?;
 
-        Ok(Expression::BinaryExpression(BinaryExpression {
+        Ok(Expression::Binary {
             left: Box::new(left),
             operator,
             right: Box::new(right),
-        }))
+        })
     }
 
     fn parse_grouped_expression(&mut self) -> Result<Expression, ParserError> {
@@ -224,20 +218,20 @@ impl<'a, 'b> Parser<'a, 'b> {
             alternative = Some(self.parse_block_statement()?);
         }
 
-        Ok(Expression::IfExpression(IfExpression {
+        Ok(Expression::If {
             condition: Box::new(condition),
             consequence,
             alternative,
-        }))
+        })
     }
 
     fn parse_call_expression(&mut self, function: Expression) -> Result<Expression, ParserError> {
         let arguments = self.parse_call_arguments()?;
 
-        Ok(Expression::FunctionCall(FunctionCall {
+        Ok(Expression::FunctionCall {
             function: Box::new(function),
             arguments,
-        }))
+        })
     }
 
     fn parse_call_arguments(&mut self) -> Result<Vec<Expression>, ParserError> {
@@ -282,10 +276,10 @@ impl<'a, 'b> Parser<'a, 'b> {
 
         self.expect_peek_token(TokenKind::SEMICOLON)?;
 
-        Ok(Statement::LetStatement(LetStatement {
+        Ok(Statement::Let {
             identifier,
             expression,
-        }))
+        })
     }
 
     fn parse_return_statement(&mut self) -> Result<Statement, ParserError> {
@@ -295,10 +289,10 @@ impl<'a, 'b> Parser<'a, 'b> {
 
         self.expect_peek_token(TokenKind::SEMICOLON)?;
 
-        Ok(Statement::ReturnStatement(ReturnStatement { value }))
+        Ok(Statement::Return { value })
     }
 
-    fn parse_block_statement(&mut self) -> Result<BlockStatement, ParserError> {
+    fn parse_block_statement(&mut self) -> Result<Program, ParserError> {
         self.next_token()?;
 
         let mut statements = Vec::new();
@@ -307,7 +301,7 @@ impl<'a, 'b> Parser<'a, 'b> {
             self.next_token()?;
         }
 
-        Ok(BlockStatement { statements })
+        Ok(Program { statements })
     }
 
     fn parse_identifier(&mut self) -> Result<Expression, ParserError> {
@@ -324,7 +318,7 @@ impl<'a, 'b> Parser<'a, 'b> {
 
     fn parse_integer_literal(&self) -> Result<Expression, ParserError> {
         match self.curr_token.kind {
-            TokenKind::INTEGER(i) => Ok(Expression::IntegerLiteral(IntegerLiteral { value: i })),
+            TokenKind::INTEGER(i) => Ok(Expression::IntegerLiteral { value: i }),
             _ => Err(ParserError::ExpectedError(
                 TokenKind::INTEGER(0),
                 self.curr_token.location.clone(),
@@ -334,8 +328,8 @@ impl<'a, 'b> Parser<'a, 'b> {
 
     fn parse_boolean_literal(&self) -> Result<Expression, ParserError> {
         match self.curr_token.kind {
-            TokenKind::TRUE => Ok(Expression::Boolean(Boolean { value: true })),
-            TokenKind::FALSE => Ok(Expression::Boolean(Boolean { value: false })),
+            TokenKind::TRUE => Ok(Expression::BooleanLiteral { value: true }),
+            TokenKind::FALSE => Ok(Expression::BooleanLiteral { value: false }),
             _ => Err(ParserError::ExpectedError(
                 TokenKind::FALSE,
                 self.curr_token.location.clone(),
@@ -345,9 +339,9 @@ impl<'a, 'b> Parser<'a, 'b> {
 
     fn parse_string_literal(&self) -> Result<Expression, ParserError> {
         match &self.curr_token.kind {
-            TokenKind::STRING(s) => Ok(Expression::StringLiteral(StringLiteral {
+            TokenKind::STRING(s) => Ok(Expression::StringLiteral {
                 value: s.to_string(),
-            })),
+            }),
             _ => Err(ParserError::ExpectedError(
                 TokenKind::STRING("".to_string()),
                 self.curr_token.location.clone(),
@@ -364,10 +358,7 @@ impl<'a, 'b> Parser<'a, 'b> {
 
         let body = self.parse_block_statement()?;
 
-        Ok(Expression::FunctionLiteral(FunctionLiteral {
-            parameters,
-            body,
-        }))
+        Ok(Expression::FunctionLiteral { parameters, body })
     }
 
     fn parse_function_parameters(&mut self) -> Result<Vec<Identifier>, ParserError> {

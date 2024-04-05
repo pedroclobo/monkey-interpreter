@@ -3,8 +3,8 @@ extern crate parser;
 extern crate symbol;
 
 use lexer::{Location, Token, TokenKind};
-use parser::ast;
-use parser::ast::{Expression, Node, Program, Statement};
+use parser::ast::{self, Block};
+use parser::ast::{Expression, Node, Statement};
 use symbol::environment::Environment;
 use symbol::Symbol;
 
@@ -48,7 +48,7 @@ impl std::fmt::Display for EvaluatorError {
 
 pub fn eval(node: Node, env: &Env) -> Result<Rc<Symbol>, EvaluatorError> {
     match node {
-        Node::Program(Program { statements }) => Ok(eval_block(&statements, &Rc::clone(&env))?),
+        Node::Program(program) => Ok(eval_block(program, &Rc::clone(&env))?),
         Node::Statement(statement) => Ok(eval_statement(statement, &Rc::clone(&env))?),
         Node::Expression(expression) => Ok(eval_expression(expression, &Rc::clone(env))?),
     }
@@ -56,24 +56,21 @@ pub fn eval(node: Node, env: &Env) -> Result<Rc<Symbol>, EvaluatorError> {
 
 fn eval_statement(statement: Statement, env: &Env) -> Result<Rc<Symbol>, EvaluatorError> {
     match statement {
-        Statement::LetStatement(ast::LetStatement {
+        Statement::Let {
             identifier,
             expression,
-        }) => {
+        } => {
             let expression = eval(Node::Expression(expression), &Rc::clone(&env))?;
             env.borrow_mut()
                 .set(identifier.value, Rc::clone(&expression));
             Ok(expression)
         }
-        Statement::ReturnStatement(ast::ReturnStatement { value }) => Ok(Rc::from(
-            Symbol::ReturnValue(eval(Node::Expression(value), env)?),
-        )),
-        Statement::ExpressionStatement(ast::ExpressionStatement { expression }) => {
-            Ok(eval(Node::Expression(expression), env)?)
-        }
-        Statement::BlockStatement(ast::BlockStatement { statements }) => {
-            Ok(eval_block(&statements, &Rc::clone(&env))?)
-        }
+        Statement::Return { value } => Ok(Rc::from(Symbol::ReturnValue(eval(
+            Node::Expression(value),
+            env,
+        )?))),
+        Statement::Expression { expression } => Ok(eval(Node::Expression(expression), env)?),
+        Statement::Block { block } => Ok(eval_block(block, &Rc::clone(&env))?),
     }
 }
 
@@ -83,54 +80,45 @@ fn eval_expression(expression: Expression, env: &Env) -> Result<Rc<Symbol>, Eval
             Some(value) => Ok(Rc::clone(&value)),
             None => Err(EvaluatorError::InvalidIndentifierError(value)),
         },
-        Expression::IntegerLiteral(ast::IntegerLiteral { value }) => {
-            Ok(Rc::from(Symbol::Integer(value)))
-        }
-        Expression::Boolean(ast::Boolean { value }) => Ok(Rc::from(Symbol::Boolean(value))),
-        Expression::StringLiteral(ast::StringLiteral { value }) => {
-            Ok(Rc::from(Symbol::StringLiteral(value)))
-        }
-        Expression::FunctionLiteral(ast::FunctionLiteral { parameters, body }) => {
-            Ok(Rc::from(Symbol::FunctionLiteral { parameters, body }))
-        }
-        Expression::UnaryExpression(ast::UnaryExpression { operator, right }) => {
-            let right = eval(Node::Expression(*right), env)?;
+        Expression::IntegerLiteral { value } => Ok(Rc::from(Symbol::Integer(value))),
+        Expression::BooleanLiteral { value } => Ok(Rc::from(Symbol::Boolean(value))),
+        Expression::StringLiteral { value } => Ok(Rc::from(Symbol::StringLiteral(value))),
+        Expression::FunctionLiteral { parameters, body } => Ok(Rc::from(Symbol::FunctionLiteral {
+            parameters,
+            block: body,
+        })),
+        Expression::Unary { operator, operand } => {
+            let right = eval(Node::Expression(*operand), env)?;
             Ok(Rc::clone(&eval_prefix_expression(operator, &right)?))
         }
-        Expression::BinaryExpression(ast::BinaryExpression {
+        Expression::Binary {
             left,
             operator,
             right,
-        }) => {
+        } => {
             let left = eval(Node::Expression(*left), &Rc::clone(&env))?;
             let right = eval(Node::Expression(*right), &Rc::clone(&env))?;
             Ok(Rc::clone(&eval_infix_expression(operator, &left, &right)?))
         }
-        Expression::IfExpression(ast::IfExpression {
+        Expression::If {
             condition,
             consequence,
             alternative,
-        }) => {
+        } => {
             let condition = eval(Node::Expression(*condition), &Rc::clone(&env))?;
             match *condition {
-                Symbol::Boolean(true) => eval(
-                    Node::Statement(Statement::BlockStatement(consequence)),
-                    &Rc::clone(&env),
-                ),
+                Symbol::Boolean(true) => eval_block(consequence, &Rc::clone(&env)),
                 Symbol::Boolean(false) => match alternative {
-                    Some(alternative) => Ok(eval(
-                        Node::Statement(Statement::BlockStatement(alternative)),
-                        env,
-                    )?),
+                    Some(alternative) => Ok(eval_block(alternative, env)?),
                     None => Ok(Rc::from(Symbol::Null)),
                 },
                 _ => Err(EvaluatorError::InvalidConditionError),
             }
         }
-        Expression::FunctionCall(ast::FunctionCall {
+        Expression::FunctionCall {
             function,
             arguments,
-        }) => {
+        } => {
             let function = eval(Node::Expression(*function), &Rc::clone(&env))?;
             let arguments = eval_expressions(&arguments, &Rc::clone(&env))?;
 
@@ -139,10 +127,10 @@ fn eval_expression(expression: Expression, env: &Env) -> Result<Rc<Symbol>, Eval
     }
 }
 
-fn eval_block(statements: &Vec<Statement>, env: &Env) -> Result<Rc<Symbol>, EvaluatorError> {
+fn eval_block(block: Block, env: &Env) -> Result<Rc<Symbol>, EvaluatorError> {
     let mut result = Rc::new(Symbol::Null);
 
-    for statement in statements {
+    for statement in block.statements {
         result = eval(Node::Statement(statement.clone()), env)?;
 
         match *result {
@@ -297,16 +285,16 @@ fn apply_function(
     env: &Env,
 ) -> Result<Rc<Symbol>, EvaluatorError> {
     match function {
-        Symbol::FunctionLiteral { parameters, body } => {
+        Symbol::FunctionLiteral {
+            parameters,
+            block: body,
+        } => {
             let mut enclosing_env = Environment::new_enclosed(Rc::clone(&env));
             parameters.iter().enumerate().for_each(|(i, parameter)| {
                 enclosing_env.set(parameter.value.clone(), Rc::clone(&arguments[i]));
             });
 
-            let evaluated = eval(
-                Node::Statement(Statement::BlockStatement(body.clone())),
-                &Rc::new(RefCell::new(enclosing_env)),
-            )?;
+            let evaluated = eval_block(body.clone(), &Rc::new(RefCell::new(enclosing_env)))?;
 
             Ok(Rc::clone(&(unwrap_return_value(evaluated)?)))
         }

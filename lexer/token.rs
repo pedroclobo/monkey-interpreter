@@ -25,6 +25,7 @@ pub enum TokenKind {
     Not,
 
     Comma,
+    Colon,
     Semicolon,
     LeftParenthesis,
     RightParenthesis,
@@ -66,6 +67,7 @@ impl std::fmt::Display for TokenKind {
             TokenKind::Or => write!(f, "tOR"),
             TokenKind::Not => write!(f, "tNOT"),
             TokenKind::Comma => write!(f, "tCOMMA"),
+            TokenKind::Colon => write!(f, "tCOLON"),
             TokenKind::Semicolon => write!(f, "tSEMICOLON"),
             TokenKind::LeftParenthesis => write!(f, "tLPAREN"),
             TokenKind::RightParenthesis => write!(f, "tRPAREN"),

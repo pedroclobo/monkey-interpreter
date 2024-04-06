@@ -100,20 +100,43 @@ fn eval_expression(expression: Expression, env: &Env) -> Result<Rc<Symbol>, Eval
         Expression::Array { elements } => Ok(Rc::from(Symbol::Array {
             elements: eval_expressions(&elements, &Rc::clone(env))?,
         })),
+        Expression::HashMap { elements } => {
+            let mut map = Vec::new();
+            for (key, value) in elements {
+                let key = eval(Node::Expression(key), &Rc::clone(env))?;
+                let value = eval(Node::Expression(value), &Rc::clone(env))?;
+                map.push((key, value));
+            }
+
+            Ok(Rc::from(Symbol::HashMap { elements: map }))
+        }
+        // TODO: Add error handling
         Expression::Index { array, index } => {
-            let array = eval(Node::Expression(*array), &Rc::clone(env))?;
+            let base = eval(Node::Expression(*array), &Rc::clone(env))?;
             let index = eval(Node::Expression(*index), &Rc::clone(env))?;
 
             // FIXME: Hacky code
             if let (Symbol::Array { elements }, Symbol::Integer(index)) = (
-                std::rc::Rc::<symbol::Symbol>::unwrap_or_clone(array),
-                std::rc::Rc::<symbol::Symbol>::unwrap_or_clone(index),
+                std::rc::Rc::<symbol::Symbol>::unwrap_or_clone(base.clone()),
+                std::rc::Rc::<symbol::Symbol>::unwrap_or_clone(index.clone()),
             ) {
                 if let Some(element) = elements.get(index as usize) {
                     return Ok(Rc::clone(element));
                 } else {
                     return Err(EvaluatorError::OutOfBounds);
                 }
+            }
+
+            // FIXME: Hacky code
+            if let Symbol::HashMap { elements } =
+                std::rc::Rc::<symbol::Symbol>::unwrap_or_clone(base)
+            {
+                for (key, value) in elements {
+                    if *key == *index {
+                        return Ok(value);
+                    }
+                }
+                return Err(EvaluatorError::InvalidKey);
             }
 
             Err(EvaluatorError::InvalidArray)
@@ -557,10 +580,37 @@ mod tests {
     }
 
     #[test]
-    fn len() {
-        let input = vec!["len([1, 2, 3])", "len(\"abcde\")"];
+    fn hash_maps() {
+        let input = vec![
+            "{\"name\": \"Monkey\", \"age\": 0, \"type\": \"Language\", \"status\": \"awesome\"}[\"name\"]",
+            "{\"name\": \"Monkey\", \"age\": 0, \"type\": \"Language\", \"status\": \"awesome\"}[\"age\"]",
+            "{\"name\": \"Monkey\", \"age\": 0, \"type\": \"Language\", \"status\": \"awesome\"}[\"type\"]",
+            "{\"name\": \"Monkey\", \"age\": 0, \"type\": \"Language\", \"status\": \"awesome\"}[\"status\"]",
+            "{\"name\": \"Monkey\", \"age\": 0, \"type\": \"Language\", \"status\": \"awesome\"}[\"na\" + \"me\"]",
+            "let myMap = {\"name\": \"Monkey\", \"age\": 0, \"type\": \"Language\", \"status\": \"awesome\"}; myMap[\"age\"]",
+        ];
 
-        let expected = vec![Symbol::Integer(3), Symbol::Integer(5)];
+        let expected = vec![
+            Symbol::StringLiteral("Monkey".to_string()),
+            Symbol::Integer(0),
+            Symbol::StringLiteral("Language".to_string()),
+            Symbol::StringLiteral("awesome".to_string()),
+            Symbol::StringLiteral("Monkey".to_string()),
+            Symbol::Integer(0),
+        ];
+
+        test(&input, &expected);
+    }
+
+    #[test]
+    fn len() {
+        let input = vec![
+            "len([1, 2, 3])",
+            "len(\"abcde\")",
+            "len({\"a\": 1, \"b\": 2})",
+        ];
+
+        let expected = vec![Symbol::Integer(3), Symbol::Integer(5), Symbol::Integer(2)];
 
         test(&input, &expected);
     }

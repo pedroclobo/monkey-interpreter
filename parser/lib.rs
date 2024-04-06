@@ -130,6 +130,7 @@ impl<'a, 'b> Parser<'a, 'b> {
             TokenKind::If => self.parse_if_expression()?,
             TokenKind::Function => self.parse_function_literal()?,
             TokenKind::LeftBracket => self.parse_array()?,
+            TokenKind::LeftBrace => self.parse_hashmap()?,
 
             tok => {
                 return Err(ParserError::InvalidPrefix(
@@ -451,6 +452,37 @@ impl<'a, 'b> Parser<'a, 'b> {
             index: Box::new(index),
         })
     }
+
+    fn parse_hashmap(&mut self) -> Result<Expression, ParserError> {
+        let mut mapping = Vec::new();
+
+        if self.peek_token.kind == TokenKind::RightBrace {
+            self.next_token()?;
+            return Ok(Expression::HashMap { elements: mapping });
+        }
+
+        self.next_token()?;
+
+        loop {
+            let key = self.parse_expression(LOWEST_PRECEDENCE)?;
+            self.next_token()?;
+
+            self.expect_curr_token(TokenKind::Colon)?;
+
+            let value = self.parse_expression(LOWEST_PRECEDENCE)?;
+            mapping.push((key, value));
+
+            if self.peek_token.kind == TokenKind::RightBrace {
+                break;
+            }
+            self.expect_peek_token(TokenKind::Comma)?;
+            self.next_token()?;
+        }
+
+        self.next_token()?;
+
+        Ok(Expression::HashMap { elements: mapping })
+    }
 }
 
 #[cfg(test)]
@@ -691,6 +723,24 @@ mod tests {
         let input = "[1, 2, 3][1]";
 
         let expected = vec!["tINDEX(tARRAY(1, 2, 3), 1)"];
+
+        test(input, &expected);
+    }
+
+    #[test]
+    fn hash_map_literals() {
+        let input = "{\"name\": \"Jimmy\", \"age\": 72, \"band\": \"Led Zeppelin\"}";
+
+        let expected = vec!["tHASHMAP(name: Jimmy, age: 72, band: Led Zeppelin)"];
+
+        test(input, &expected);
+    }
+
+    #[test]
+    fn hash_map_indexing() {
+        let input = "{\"name\": \"Jimmy\", \"age\": 72, \"band\": \"Led Zeppelin\"}[\"age\"]";
+
+        let expected = vec!["tINDEX(tHASHMAP(name: Jimmy, age: 72, band: Led Zeppelin), age)"];
 
         test(input, &expected);
     }

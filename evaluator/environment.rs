@@ -29,6 +29,9 @@ impl Environment {
                         Symbol::Array { elements } => {
                             Ok(Rc::new(Symbol::Integer(elements.len() as i32)))
                         }
+                        Symbol::HashMap { elements } => {
+                            Ok(Rc::new(Symbol::Integer(elements.len() as i32)))
+                        }
                         _ => Err(EvaluatorError::InvalidArgumentType),
                     }
                 },

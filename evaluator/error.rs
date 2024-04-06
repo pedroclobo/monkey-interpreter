@@ -11,6 +11,7 @@ pub enum EvaluatorError {
     InvalidArray,
     WrongArgumentCount(u8, u8),
     InvalidArgumentType,
+    InvalidKey,
 }
 
 impl std::fmt::Display for EvaluatorError {
@@ -37,6 +38,7 @@ impl std::fmt::Display for EvaluatorError {
                 )
             }
             EvaluatorError::InvalidArgumentType => write!(f, "Invalid argument type"),
+            EvaluatorError::InvalidKey => write!(f, "Invalid key"),
         }
     }
 }

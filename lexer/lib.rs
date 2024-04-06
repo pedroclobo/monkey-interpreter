@@ -145,6 +145,11 @@ impl<'a> Lexer<'a> {
                 token.kind = TokenKind::Comma;
                 Ok(token)
             }
+            b':' => {
+                self.read_char();
+                token.kind = TokenKind::Colon;
+                Ok(token)
+            }
             b';' => {
                 self.read_char();
                 token.kind = TokenKind::Semicolon;

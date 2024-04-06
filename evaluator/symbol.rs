@@ -19,6 +19,9 @@ pub enum Symbol {
     Array {
         elements: Vec<Rc<Symbol>>,
     },
+    HashMap {
+        elements: Vec<(Rc<Symbol>, Rc<Symbol>)>,
+    },
     BuiltInFunction {
         function: fn(Vec<Rc<Symbol>>) -> Result<Rc<Symbol>, EvaluatorError>,
     },
@@ -61,6 +64,15 @@ impl std::fmt::Display for Symbol {
             Symbol::BuiltInFunction { function: _ } => {
                 write!(f, "Built-in function")
             }
+            Symbol::HashMap { elements } => write!(
+                f,
+                "{{{}}}",
+                elements
+                    .iter()
+                    .map(|(k, v)| format!("{}: {}", k, v))
+                    .collect::<Vec<String>>()
+                    .join(", ")
+            ),
         }
     }
 }

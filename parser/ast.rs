@@ -65,6 +65,9 @@ pub enum Expression {
     Array {
         elements: Vec<Expression>,
     },
+    HashMap {
+        elements: Vec<(Expression, Expression)>,
+    },
     Index {
         array: Box<Expression>,
         index: Box<Expression>,
@@ -203,6 +206,15 @@ impl std::fmt::Display for Expression {
             Expression::Index { array, index } => {
                 write!(f, "tINDEX({}, {})", array, index)
             }
+            Expression::HashMap { elements } => write!(
+                f,
+                "tHASHMAP({})",
+                elements
+                    .iter()
+                    .map(|(key, value)| format!("{}: {}", key, value))
+                    .collect::<Vec<String>>()
+                    .join(", ")
+            ),
         }
     }
 }

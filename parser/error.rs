@@ -1,19 +1,19 @@
 use lexer::{LexerError, Location, TokenKind};
 
 pub enum ParserError {
-    LexerError(LexerError),
-    ExpectedError(TokenKind, Location),
-    InvalidPrefixError(TokenKind, Location),
+    Lexer(LexerError),
+    Expected(TokenKind, Location),
+    InvalidPrefix(TokenKind, Location),
 }
 
 impl std::fmt::Display for ParserError {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
-            ParserError::LexerError(l) => write!(f, "{}", l),
-            ParserError::ExpectedError(expected, location) => {
+            ParserError::Lexer(l) => write!(f, "{}", l),
+            ParserError::Expected(expected, location) => {
                 write!(f, "{} - PARSER ERROR: Expected {}", location, expected)
             }
-            ParserError::InvalidPrefixError(expected, location) => write!(
+            ParserError::InvalidPrefix(expected, location) => write!(
                 f,
                 "{} - PARSER ERROR: Invalid prefix operator {}",
                 location, expected
@@ -24,6 +24,6 @@ impl std::fmt::Display for ParserError {
 
 impl From<LexerError> for ParserError {
     fn from(err: LexerError) -> Self {
-        ParserError::LexerError(err)
+        ParserError::Lexer(err)
     }
 }

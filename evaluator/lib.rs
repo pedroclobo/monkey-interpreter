@@ -48,8 +48,8 @@ impl std::fmt::Display for EvaluatorError {
 
 pub fn eval(node: Node, env: &Env) -> Result<Rc<Symbol>, EvaluatorError> {
     match node {
-        Node::Program(program) => Ok(eval_block(program, &Rc::clone(&env))?),
-        Node::Statement(statement) => Ok(eval_statement(statement, &Rc::clone(&env))?),
+        Node::Program(program) => Ok(eval_block(program, &Rc::clone(env))?),
+        Node::Statement(statement) => Ok(eval_statement(statement, &Rc::clone(env))?),
         Node::Expression(expression) => Ok(eval_expression(expression, &Rc::clone(env))?),
     }
 }
@@ -60,7 +60,7 @@ fn eval_statement(statement: Statement, env: &Env) -> Result<Rc<Symbol>, Evaluat
             identifier,
             expression,
         } => {
-            let expression = eval(Node::Expression(expression), &Rc::clone(&env))?;
+            let expression = eval(Node::Expression(expression), &Rc::clone(env))?;
             env.borrow_mut()
                 .set(identifier.value, Rc::clone(&expression));
             Ok(expression)
@@ -70,7 +70,7 @@ fn eval_statement(statement: Statement, env: &Env) -> Result<Rc<Symbol>, Evaluat
             env,
         )?))),
         Statement::Expression { expression } => Ok(eval(Node::Expression(expression), env)?),
-        Statement::Block { block } => Ok(eval_block(block, &Rc::clone(&env))?),
+        Statement::Block { block } => Ok(eval_block(block, &Rc::clone(env))?),
     }
 }
 
@@ -96,8 +96,8 @@ fn eval_expression(expression: Expression, env: &Env) -> Result<Rc<Symbol>, Eval
             operator,
             right,
         } => {
-            let left = eval(Node::Expression(*left), &Rc::clone(&env))?;
-            let right = eval(Node::Expression(*right), &Rc::clone(&env))?;
+            let left = eval(Node::Expression(*left), &Rc::clone(env))?;
+            let right = eval(Node::Expression(*right), &Rc::clone(env))?;
             Ok(Rc::clone(&eval_infix_expression(operator, &left, &right)?))
         }
         Expression::If {
@@ -105,9 +105,9 @@ fn eval_expression(expression: Expression, env: &Env) -> Result<Rc<Symbol>, Eval
             consequence,
             alternative,
         } => {
-            let condition = eval(Node::Expression(*condition), &Rc::clone(&env))?;
+            let condition = eval(Node::Expression(*condition), &Rc::clone(env))?;
             match *condition {
-                Symbol::Boolean(true) => eval_block(consequence, &Rc::clone(&env)),
+                Symbol::Boolean(true) => eval_block(consequence, &Rc::clone(env)),
                 Symbol::Boolean(false) => match alternative {
                     Some(alternative) => Ok(eval_block(alternative, env)?),
                     None => Ok(Rc::from(Symbol::Null)),
@@ -119,10 +119,10 @@ fn eval_expression(expression: Expression, env: &Env) -> Result<Rc<Symbol>, Eval
             function,
             arguments,
         } => {
-            let function = eval(Node::Expression(*function), &Rc::clone(&env))?;
-            let arguments = eval_expressions(&arguments, &Rc::clone(&env))?;
+            let function = eval(Node::Expression(*function), &Rc::clone(env))?;
+            let arguments = eval_expressions(&arguments, &Rc::clone(env))?;
 
-            Ok(apply_function(&function, &arguments, &Rc::clone(&env))?)
+            Ok(apply_function(&function, &arguments, &Rc::clone(env))?)
         }
     }
 }
@@ -143,7 +143,7 @@ fn eval_block(block: Block, env: &Env) -> Result<Rc<Symbol>, EvaluatorError> {
 }
 
 fn eval_expressions(
-    expressions: &Vec<Expression>,
+    expressions: &[Expression],
     env: &Env,
 ) -> Result<Vec<Rc<Symbol>>, EvaluatorError> {
     expressions
@@ -281,7 +281,7 @@ fn eval_infix_expression(
 
 fn apply_function(
     function: &Symbol,
-    arguments: &Vec<Rc<Symbol>>,
+    arguments: &[Rc<Symbol>],
     env: &Env,
 ) -> Result<Rc<Symbol>, EvaluatorError> {
     match function {
@@ -289,7 +289,7 @@ fn apply_function(
             parameters,
             block: body,
         } => {
-            let mut enclosing_env = Environment::new_enclosed(Rc::clone(&env));
+            let mut enclosing_env = Environment::new_enclosed(Rc::clone(env));
             parameters.iter().enumerate().for_each(|(i, parameter)| {
                 enclosing_env.set(parameter.value.clone(), Rc::clone(&arguments[i]));
             });
@@ -304,7 +304,7 @@ fn apply_function(
 
 fn unwrap_return_value(symbol: Rc<Symbol>) -> Result<Rc<Symbol>, EvaluatorError> {
     if let Symbol::ReturnValue(value) = symbol.as_ref() {
-        Ok(Rc::clone(&value))
+        Ok(Rc::clone(value))
     } else {
         Ok(symbol)
     }

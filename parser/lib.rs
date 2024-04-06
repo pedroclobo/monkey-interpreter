@@ -28,8 +28,8 @@ impl<'a, 'b> Parser<'a, 'b> {
         };
 
         // set curr_token and peek_token
-        let _ = parser.next_token()?;
-        let _ = parser.next_token()?;
+        parser.next_token()?;
+        parser.next_token()?;
 
         Ok(parser)
     }
@@ -46,7 +46,7 @@ impl<'a, 'b> Parser<'a, 'b> {
             self.next_token()?;
             Ok(())
         } else {
-            Err(ParserError::ExpectedError(
+            Err(ParserError::Expected(
                 kind,
                 self.curr_token.location.clone(),
             ))
@@ -58,7 +58,7 @@ impl<'a, 'b> Parser<'a, 'b> {
             self.next_token()?;
             Ok(())
         } else {
-            Err(ParserError::ExpectedError(
+            Err(ParserError::Expected(
                 kind,
                 self.peek_token.location.clone(),
             ))
@@ -130,7 +130,7 @@ impl<'a, 'b> Parser<'a, 'b> {
             TokenKind::FUNCTION => self.parse_function_literal()?,
 
             tok => {
-                return Err(ParserError::InvalidPrefixError(
+                return Err(ParserError::InvalidPrefix(
                     tok.clone(),
                     self.curr_token.location.clone(),
                 ))
@@ -262,7 +262,7 @@ impl<'a, 'b> Parser<'a, 'b> {
             TokenKind::IDENTIFIER(a) => ast::Identifier {
                 value: a.to_string(),
             },
-            _ => Err(ParserError::ExpectedError(
+            _ => Err(ParserError::Expected(
                 TokenKind::IDENTIFIER("id".to_string()),
                 self.peek_token.location.clone(),
             ))?,
@@ -309,7 +309,7 @@ impl<'a, 'b> Parser<'a, 'b> {
             TokenKind::IDENTIFIER(id) => Ok(Expression::Identifier(Identifier {
                 value: id.to_string(),
             })),
-            _ => Err(ParserError::ExpectedError(
+            _ => Err(ParserError::Expected(
                 TokenKind::IDENTIFIER("id".to_string()),
                 self.curr_token.location.clone(),
             ))?,
@@ -319,7 +319,7 @@ impl<'a, 'b> Parser<'a, 'b> {
     fn parse_integer_literal(&self) -> Result<Expression, ParserError> {
         match self.curr_token.kind {
             TokenKind::INTEGER(i) => Ok(Expression::IntegerLiteral { value: i }),
-            _ => Err(ParserError::ExpectedError(
+            _ => Err(ParserError::Expected(
                 TokenKind::INTEGER(0),
                 self.curr_token.location.clone(),
             ))?,
@@ -330,7 +330,7 @@ impl<'a, 'b> Parser<'a, 'b> {
         match self.curr_token.kind {
             TokenKind::TRUE => Ok(Expression::BooleanLiteral { value: true }),
             TokenKind::FALSE => Ok(Expression::BooleanLiteral { value: false }),
-            _ => Err(ParserError::ExpectedError(
+            _ => Err(ParserError::Expected(
                 TokenKind::FALSE,
                 self.curr_token.location.clone(),
             ))?,
@@ -342,7 +342,7 @@ impl<'a, 'b> Parser<'a, 'b> {
             TokenKind::STRING(s) => Ok(Expression::StringLiteral {
                 value: s.to_string(),
             }),
-            _ => Err(ParserError::ExpectedError(
+            _ => Err(ParserError::Expected(
                 TokenKind::STRING("".to_string()),
                 self.curr_token.location.clone(),
             ))?,
@@ -375,7 +375,7 @@ impl<'a, 'b> Parser<'a, 'b> {
         identifiers.push(ast::Identifier {
             value: match &self.curr_token.kind {
                 TokenKind::IDENTIFIER(id) => id.to_string(),
-                _ => Err(ParserError::ExpectedError(
+                _ => Err(ParserError::Expected(
                     TokenKind::IDENTIFIER("id".to_string()),
                     self.curr_token.location.clone(),
                 ))?,
@@ -388,7 +388,7 @@ impl<'a, 'b> Parser<'a, 'b> {
             identifiers.push(ast::Identifier {
                 value: match &self.curr_token.kind {
                     TokenKind::IDENTIFIER(id) => id.to_string(),
-                    _ => Err(ParserError::ExpectedError(
+                    _ => Err(ParserError::Expected(
                         TokenKind::STRING("".to_string()),
                         self.curr_token.location.clone(),
                     ))?,

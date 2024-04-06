@@ -32,8 +32,10 @@ impl<'a> Lexer<'a> {
     }
 
     pub fn next_token(&mut self) -> Result<Token, LexerError> {
-        let mut token: Token = Token::default();
-        token.location = self.location.clone();
+        let mut token = Token {
+            location: self.location.clone(),
+            ..Default::default()
+        };
 
         match self.char {
             b'=' => {
@@ -221,8 +223,10 @@ impl<'a> Lexer<'a> {
     }
 
     fn read_identifier(&mut self) -> Token {
-        let mut token = Token::default();
-        token.location = self.location.clone();
+        let mut token = Token {
+            location: self.location.clone(),
+            ..Default::default()
+        };
 
         let position = self.position;
         while self.char.is_ascii_alphabetic() || self.char == b'_' {
@@ -245,8 +249,10 @@ impl<'a> Lexer<'a> {
     }
 
     fn read_integer(&mut self) -> Result<Token, LexerError> {
-        let mut token = Token::default();
-        token.location = self.location.clone();
+        let mut token = Token {
+            location: self.location.clone(),
+            ..Default::default()
+        };
 
         let position = self.position;
         while self.char.is_ascii_digit() {
@@ -266,8 +272,10 @@ impl<'a> Lexer<'a> {
     }
 
     fn read_string(&mut self) -> Token {
-        let mut token: Token = Token::default();
-        token.location = self.location.clone();
+        let mut token = Token {
+            location: self.location.clone(),
+            ..Default::default()
+        };
 
         self.read_char(); // read the opening "
 

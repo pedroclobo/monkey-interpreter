@@ -62,6 +62,13 @@ pub enum Expression {
         function: Box<Expression>,
         arguments: Vec<Expression>,
     },
+    Array {
+        elements: Vec<Expression>,
+    },
+    Index {
+        array: Box<Expression>,
+        index: Box<Expression>,
+    },
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -184,6 +191,18 @@ impl std::fmt::Display for Expression {
                     .collect::<Vec<String>>()
                     .join(", ")
             ),
+            Expression::Array { elements } => write!(
+                f,
+                "tARRAY({})",
+                elements
+                    .iter()
+                    .map(|element| element.to_string())
+                    .collect::<Vec<String>>()
+                    .join(", ")
+            ),
+            Expression::Index { array, index } => {
+                write!(f, "tINDEX({}, {})", array, index)
+            }
         }
     }
 }

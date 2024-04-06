@@ -1,8 +1,8 @@
 extern crate parser;
+use parser::ast;
 
 pub mod environment;
 
-use parser::ast;
 use std::rc::Rc;
 
 #[derive(Debug, PartialEq, Clone)]
@@ -15,6 +15,9 @@ pub enum Symbol {
     FunctionLiteral {
         parameters: Vec<ast::Identifier>,
         block: ast::Block,
+    },
+    Array {
+        elements: Vec<Rc<Symbol>>,
     },
 }
 
@@ -39,6 +42,17 @@ impl std::fmt::Display for Symbol {
                         .collect::<Vec<String>>()
                         .join(", "),
                     body
+                )
+            }
+            Symbol::Array { elements } => {
+                write!(
+                    f,
+                    "[{}]",
+                    elements
+                        .iter()
+                        .map(|e| e.to_string())
+                        .collect::<Vec<String>>()
+                        .join(", ")
                 )
             }
         }

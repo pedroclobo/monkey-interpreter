@@ -20,6 +20,8 @@ pub enum EvaluatorError {
     InvalidConditionError,
     InvalidFunctionError,
     InvalidInfixExpressionError(Option<TokenKind>, Location),
+    OutOfBoundsError,
+    InvalidArrayError,
 }
 
 impl std::fmt::Display for EvaluatorError {
@@ -28,18 +30,20 @@ impl std::fmt::Display for EvaluatorError {
 
         match self {
             InvalidIndentifierError(identifier) => {
-                write!(f, "identifier not found: {}", identifier)
+                write!(f, "Identifier not found: {}", identifier)
             }
             InvalidPrefixExpressionError(token, location) => match token {
                 Some(token) => write!(f, "{} - invalid prefix expression: {}", location, token),
                 None => write!(f, "{} - invalid prefix expression", location),
             },
-            InvalidConditionError => write!(f, "invalid condition"),
-            InvalidFunctionError => write!(f, "invalid function"),
+            InvalidConditionError => write!(f, "Invalid condition"),
+            InvalidFunctionError => write!(f, "Invalid function"),
             InvalidInfixExpressionError(token, location) => match token {
                 Some(token) => write!(f, "{} - invalid infix expression: {}", location, token),
                 None => write!(f, "{} - invalid infix expression", location),
             },
+            OutOfBoundsError => write!(f, "Out of bounds"),
+            InvalidArrayError => write!(f, "Invalid array"),
         }
     }
 }
@@ -121,6 +125,27 @@ fn eval_expression(expression: Expression, env: &Env) -> Result<Rc<Symbol>, Eval
             let arguments = eval_expressions(&arguments, &Rc::clone(env))?;
 
             Ok(apply_function(&function, &arguments, &Rc::clone(env))?)
+        }
+        Expression::Array { elements } => Ok(Rc::from(Symbol::Array {
+            elements: eval_expressions(&elements, &Rc::clone(env))?,
+        })),
+        Expression::Index { array, index } => {
+            let array = eval(Node::Expression(*array), &Rc::clone(env))?;
+            let index = eval(Node::Expression(*index), &Rc::clone(env))?;
+
+            // FIXME: Hacky code
+            if let (Symbol::Array { elements }, Symbol::Integer(index)) = (
+                std::rc::Rc::<symbol::Symbol>::unwrap_or_clone(array),
+                std::rc::Rc::<symbol::Symbol>::unwrap_or_clone(index),
+            ) {
+                if let Some(element) = elements.get(index as usize) {
+                    return Ok(Rc::clone(element));
+                } else {
+                    return Err(EvaluatorError::OutOfBoundsError);
+                }
+            }
+
+            Err(EvaluatorError::InvalidArrayError)
         }
     }
 }
@@ -535,6 +560,29 @@ mod tests {
             factorial(5);",
         ];
         let expected = vec![Symbol::Integer(55), Symbol::Integer(120)];
+
+        test(&input, &expected);
+    }
+
+    #[test]
+    fn arrays() {
+        let input = vec![
+            "[1, 2, 3][0]",
+            "[1, 2, 3][1]",
+            "[1, 2, 3][2]",
+            "[1, 2, 3][1 + 1]",
+            "let i = 0; [1][i];",
+            "let myArray = [1, 2, 3]; let i = myArray[0]; myArray[i]",
+        ];
+
+        let expected = vec![
+            Symbol::Integer(1),
+            Symbol::Integer(2),
+            Symbol::Integer(3),
+            Symbol::Integer(3),
+            Symbol::Integer(1),
+            Symbol::Integer(2),
+        ];
 
         test(&input, &expected);
     }

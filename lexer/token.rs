@@ -85,6 +85,7 @@ impl std::fmt::Display for TokenKind {
     }
 }
 
+// TODO: implement Copy semantics
 #[derive(Debug, PartialEq, Clone)]
 pub struct Token {
     pub kind: TokenKind,

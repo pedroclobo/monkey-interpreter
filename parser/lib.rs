@@ -74,6 +74,7 @@ impl<'a, 'b> Parser<'a, 'b> {
             TokenKind::Multiplication | TokenKind::Division => 6,
             TokenKind::Unary => 7,
             TokenKind::LeftParenthesis => 8,
+            TokenKind::LeftBracket => 9,
             _ => LOWEST_PRECEDENCE,
         }
     }
@@ -118,7 +119,8 @@ impl<'a, 'b> Parser<'a, 'b> {
     }
 
     fn parse_expression(&mut self, precedence: u32) -> Result<Expression, ParserError> {
-        let mut left_expr = match &self.curr_token.kind {
+        // Parse prefix expression
+        let mut expr = match &self.curr_token.kind {
             TokenKind::Identifier(_) => self.parse_identifier()?,
             TokenKind::Integer(_) => self.parse_integer_literal()?,
             TokenKind::True | TokenKind::False => self.parse_boolean_literal()?,
@@ -127,6 +129,7 @@ impl<'a, 'b> Parser<'a, 'b> {
             TokenKind::LeftParenthesis => self.parse_grouped_expression()?,
             TokenKind::If => self.parse_if_expression()?,
             TokenKind::Function => self.parse_function_literal()?,
+            TokenKind::LeftBracket => self.parse_array()?,
 
             tok => {
                 return Err(ParserError::InvalidPrefix(
@@ -136,8 +139,9 @@ impl<'a, 'b> Parser<'a, 'b> {
             }
         };
 
+        // Parse infix expression
         while self.peek_token.kind != TokenKind::Semicolon && precedence < self.peek_precedence() {
-            left_expr = match self.peek_token.kind {
+            expr = match self.peek_token.kind {
                 TokenKind::Equal
                 | TokenKind::NotEqual
                 | TokenKind::LessThan
@@ -151,17 +155,22 @@ impl<'a, 'b> Parser<'a, 'b> {
                 | TokenKind::Multiplication
                 | TokenKind::Division => {
                     self.next_token()?;
-                    self.parse_binary_expression(left_expr)?
+                    self.parse_binary_expression(expr)?
                 }
                 TokenKind::LeftParenthesis => {
                     self.next_token()?;
-                    self.parse_call_expression(left_expr)?
+                    self.parse_call_expression(expr)?
                 }
-                _ => return Ok(left_expr),
+                TokenKind::LeftBracket => {
+                    self.next_token()?;
+                    self.parse_index_expression(expr)?
+                }
+                // No infix, just return prefix
+                _ => return Ok(expr),
             };
         }
 
-        Ok(left_expr)
+        Ok(expr)
     }
 
     fn parse_unary_expression(&mut self) -> Result<Expression, ParserError> {
@@ -401,10 +410,53 @@ impl<'a, 'b> Parser<'a, 'b> {
 
         Ok(identifiers)
     }
+
+    fn parse_array(&mut self) -> Result<Expression, ParserError> {
+        let mut expressions = Vec::new();
+
+        if self.peek_token.kind == TokenKind::RightBracket {
+            self.next_token()?;
+            return Ok(Expression::Array {
+                elements: expressions,
+            });
+        }
+
+        self.next_token()?;
+
+        loop {
+            expressions.push(self.parse_expression(LOWEST_PRECEDENCE)?);
+            if self.peek_token.kind == TokenKind::RightBracket {
+                break;
+            }
+            self.expect_peek_token(TokenKind::Comma)?;
+            self.next_token()?;
+        }
+
+        self.next_token()?;
+
+        Ok(Expression::Array {
+            elements: expressions,
+        })
+    }
+
+    fn parse_index_expression(&mut self, left: Expression) -> Result<Expression, ParserError> {
+        self.next_token()?;
+
+        let index = self.parse_expression(LOWEST_PRECEDENCE)?;
+
+        self.expect_peek_token(TokenKind::RightBracket)?;
+
+        Ok(Expression::Index {
+            array: Box::new(left),
+            index: Box::new(index),
+        })
+    }
 }
 
 #[cfg(test)]
 mod tests {
+    use std::process::ExitCode;
+
     use Lexer;
     use Parser;
 
@@ -623,6 +675,24 @@ mod tests {
 		"#;
 
         let expected = vec!["tCALL(add, (1, (2 tMUL 3), (4 tPLUS 5)))", "tCALL(add, ())"];
+
+        test(input, &expected);
+    }
+
+    #[test]
+    fn array_literals() {
+        let input = "[1, 2 * 2, 3 + 3]";
+
+        let expected = vec!["tARRAY(1, (2 tMUL 2), (3 tPLUS 3))"];
+
+        test(input, &expected);
+    }
+
+    #[test]
+    fn array_indexing() {
+        let input = "[1, 2, 3][1]";
+
+        let expected = vec!["tINDEX(tARRAY(1, 2, 3), 1)"];
 
         test(input, &expected);
     }

@@ -1,7 +1,10 @@
 #[derive(Debug, PartialEq, Clone)]
 pub struct Location {
+    /// Filename
     pub file: String,
+    /// Line
     pub line: usize,
+    /// Column
     pub column: usize,
 }
 

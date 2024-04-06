@@ -1,27 +1,31 @@
 use crate::location::Location;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug)]
 pub enum LexerError {
-    InvalidTokenError(String, Location),
-    InvalidTokenSequenceError(String, Location),
-    InvalidIntegerError(String, Location),
+    InvalidToken(String, Location),
+    InvalidTokenSequence(String, Location),
+    InvalidInteger(String, Location),
+    NoMoreTokens(Location),
 }
 
 impl std::fmt::Display for LexerError {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
-            LexerError::InvalidTokenError(lexeme, location) => {
+            LexerError::InvalidToken(lexeme, location) => {
                 write!(f, "{}: error: invalid lexeme `{}`", location, lexeme)
             }
-            LexerError::InvalidTokenSequenceError(lexeme, location) => {
+            LexerError::InvalidTokenSequence(lexeme, location) => {
                 write!(
                     f,
                     "{}: error: invalid token sequence `{}`",
                     location, lexeme
                 )
             }
-            LexerError::InvalidIntegerError(lexeme, location) => {
+            LexerError::InvalidInteger(lexeme, location) => {
                 write!(f, "{}: error: invalid integer: `{}`", location, lexeme)
+            }
+            LexerError::NoMoreTokens(location) => {
+                write!(f, "{}: error: no more tokens", location)
             }
         }
     }

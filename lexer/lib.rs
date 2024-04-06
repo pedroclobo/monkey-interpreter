@@ -3,17 +3,24 @@ pub use crate::location::Location;
 pub use crate::token::{Token, TokenKind};
 
 pub mod error;
-mod location;
+pub mod location;
 pub mod token;
+
 pub struct Lexer<'a> {
-    pub location: Location,
+    /// File location information
+    location: Location,
+    /// Input source code
     input: &'a str,
+    /// Index into `input`
     position: usize,
+    /// Next index of `input` to be read
     read_position: usize,
+    /// Current character, indexed by `position`
     char: u8,
 }
 
 impl<'a> Lexer<'a> {
+    /// Create new lexer from `input` source code and `file` filename
     pub fn new(input: &'a str, file: &'a str) -> Self {
         let mut lex = Lexer {
             location: Location::default(),
@@ -29,6 +36,7 @@ impl<'a> Lexer<'a> {
         lex
     }
 
+    /// Get the next token, if possible
     pub fn next_token(&mut self) -> Result<Token, LexerError> {
         let mut token = Token {
             location: self.location.clone(),
@@ -37,137 +45,139 @@ impl<'a> Lexer<'a> {
 
         match self.char {
             b'=' => {
-                if self.peek_char() == b'=' {
+                if let Some(b'=') = self.peek_char() {
                     self.read_char();
                     self.read_char();
-                    token.kind = TokenKind::EQ;
+                    token.kind = TokenKind::Equal;
                     Ok(token)
                 } else {
                     self.read_char();
-                    token.kind = TokenKind::ASSIGN;
+                    token.kind = TokenKind::Assign;
                     Ok(token)
                 }
             }
             b'!' => {
-                if self.peek_char() == b'=' {
+                if let Some(b'=') = self.peek_char() {
                     self.read_char();
                     self.read_char();
-                    token.kind = TokenKind::NE;
+                    token.kind = TokenKind::NotEqual;
                     Ok(token)
                 } else {
                     self.read_char();
-                    token.kind = TokenKind::NOT;
+                    token.kind = TokenKind::Not;
                     Ok(token)
                 }
             }
 
             b'+' => {
                 self.read_char();
-                token.kind = TokenKind::PLUS;
+                token.kind = TokenKind::Plus;
                 Ok(token)
             }
             b'-' => {
                 self.read_char();
-                token.kind = TokenKind::MINUS;
+                token.kind = TokenKind::Minus;
                 Ok(token)
             }
             b'*' => {
                 self.read_char();
-                token.kind = TokenKind::MUL;
+                token.kind = TokenKind::Multiplication;
                 Ok(token)
             }
             b'/' => {
                 self.read_char();
-                token.kind = TokenKind::DIV;
+                token.kind = TokenKind::Division;
                 Ok(token)
             }
             b'<' => {
-                if self.peek_char() == b'=' {
+                if let Some(b'=') = self.peek_char() {
                     self.read_char();
                     self.read_char();
-                    token.kind = TokenKind::LE;
+                    token.kind = TokenKind::LessThanOrEqual;
                     Ok(token)
                 } else {
                     self.read_char();
-                    token.kind = TokenKind::LT;
+                    token.kind = TokenKind::LessThan;
                     Ok(token)
                 }
             }
             b'>' => {
-                if self.peek_char() == b'=' {
+                if let Some(b'=') = self.peek_char() {
                     self.read_char();
                     self.read_char();
-                    token.kind = TokenKind::GE;
+                    token.kind = TokenKind::GreaterThanOrEqual;
                     Ok(token)
                 } else {
                     self.read_char();
-                    token.kind = TokenKind::GT;
+                    token.kind = TokenKind::GreaterThan;
                     Ok(token)
                 }
             }
             b'&' => match self.peek_char() {
-                b'&' => {
+                Some(b'&') => {
                     self.read_char();
                     self.read_char();
-                    token.kind = TokenKind::AND;
+                    token.kind = TokenKind::And;
                     Ok(token)
                 }
-                lex => Err(LexerError::InvalidTokenSequenceError(
+                Some(lex) => Err(LexerError::InvalidTokenSequence(
                     format!("&{}", lex as char),
                     token.location.clone(),
                 )),
+                None => Err(LexerError::NoMoreTokens(token.location.clone())),
             },
             b'|' => match self.peek_char() {
-                b'|' => {
+                Some(b'|') => {
                     self.read_char();
                     self.read_char();
-                    token.kind = TokenKind::OR;
+                    token.kind = TokenKind::Or;
                     Ok(token)
                 }
-                lex => Err(LexerError::InvalidTokenSequenceError(
-                    format!("|{}", lex as char),
+                Some(lex) => Err(LexerError::InvalidTokenSequence(
+                    format!("&{}", lex as char),
                     token.location.clone(),
                 )),
+                None => Err(LexerError::NoMoreTokens(token.location.clone())),
             },
 
             b',' => {
                 self.read_char();
-                token.kind = TokenKind::COMMA;
+                token.kind = TokenKind::Comma;
                 Ok(token)
             }
             b';' => {
                 self.read_char();
-                token.kind = TokenKind::SEMICOLON;
+                token.kind = TokenKind::Semicolon;
                 Ok(token)
             }
             b'(' => {
                 self.read_char();
-                token.kind = TokenKind::LPAREN;
+                token.kind = TokenKind::LeftParenthesis;
                 Ok(token)
             }
             b')' => {
                 self.read_char();
-                token.kind = TokenKind::RPAREN;
+                token.kind = TokenKind::RightParenthesis;
                 Ok(token)
             }
             b'{' => {
                 self.read_char();
-                token.kind = TokenKind::LBRACE;
+                token.kind = TokenKind::LeftBrace;
                 Ok(token)
             }
             b'}' => {
                 self.read_char();
-                token.kind = TokenKind::RBRACE;
+                token.kind = TokenKind::RightBrace;
                 Ok(token)
             }
             b'[' => {
                 self.read_char();
-                token.kind = TokenKind::LBRACKET;
+                token.kind = TokenKind::LeftBracket;
                 Ok(token)
             }
             b']' => {
                 self.read_char();
-                token.kind = TokenKind::RBRACKET;
+                token.kind = TokenKind::RightBracket;
                 Ok(token)
             }
 
@@ -183,11 +193,11 @@ impl<'a> Lexer<'a> {
             }
 
             0 => {
-                token.kind = TokenKind::EOF;
+                token.kind = TokenKind::Eof;
                 Ok(token)
             }
 
-            lex => Err(LexerError::InvalidTokenError(
+            lex => Err(LexerError::InvalidToken(
                 format!("{}", lex as char),
                 token.location.clone(),
             )),
@@ -195,10 +205,10 @@ impl<'a> Lexer<'a> {
     }
 
     fn read_char(&mut self) {
-        if self.read_position >= self.input.len() {
-            self.char = 0;
-        } else {
-            self.char = self.input.as_bytes()[self.read_position];
+        let next = self.peek_char();
+        match next {
+            Some(c) => self.char = c,
+            None => self.char = 0,
         }
 
         if self.char == b'\n' {
@@ -212,12 +222,8 @@ impl<'a> Lexer<'a> {
         self.read_position += 1;
     }
 
-    fn peek_char(&self) -> u8 {
-        if self.read_position >= self.input.len() {
-            0
-        } else {
-            self.input.as_bytes()[self.read_position]
-        }
+    fn peek_char(&self) -> Option<u8> {
+        self.input.as_bytes().get(self.read_position).copied()
     }
 
     fn read_identifier(&mut self) -> Token {
@@ -233,14 +239,14 @@ impl<'a> Lexer<'a> {
 
         let identifier = &self.input[position..self.position];
         token.kind = match identifier {
-            "fn" => TokenKind::FUNCTION,
-            "let" => TokenKind::LET,
-            "true" => TokenKind::TRUE,
-            "false" => TokenKind::FALSE,
-            "if" => TokenKind::IF,
-            "else" => TokenKind::ELSE,
-            "return" => TokenKind::RETURN,
-            _ => TokenKind::IDENTIFIER(identifier.to_string()),
+            "fn" => TokenKind::Function,
+            "let" => TokenKind::Let,
+            "true" => TokenKind::True,
+            "false" => TokenKind::False,
+            "if" => TokenKind::If,
+            "else" => TokenKind::Else,
+            "return" => TokenKind::Return,
+            _ => TokenKind::Identifier(identifier.to_string()),
         };
 
         token
@@ -259,10 +265,10 @@ impl<'a> Lexer<'a> {
 
         match &self.input[position..self.position].parse::<i32>() {
             Ok(integer) => {
-                token.kind = TokenKind::INTEGER(*integer);
+                token.kind = TokenKind::Integer(*integer);
                 Ok(token)
             }
-            Err(_) => Err(LexerError::InvalidIntegerError(
+            Err(_) => Err(LexerError::InvalidInteger(
                 self.input[position..self.position].to_string(),
                 token.location.clone(),
             )),
@@ -285,19 +291,14 @@ impl<'a> Lexer<'a> {
         self.read_char(); // read the closing "
 
         let string = &self.input[position..self.position - 1];
-        token.kind = TokenKind::STRING(string.to_string());
+        token.kind = TokenKind::String(string.to_string());
         token
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use Lexer;
-    use LexerError;
-    use LexerError::*;
-    use Location;
-    use Token;
-    use TokenKind::*;
+    use super::*;
 
     macro_rules! token {
         ($kind:expr, $line:expr, $column:expr) => {
@@ -313,7 +314,7 @@ mod tests {
     }
 
     macro_rules! error {
-        ($kind:ident, $lexeme:expr, $line:expr, $column:expr) => {
+        ($kind:expr, $lexeme:expr, $line:expr, $column:expr) => {
             $kind(
                 $lexeme.to_string(),
                 Location {
@@ -351,22 +352,22 @@ mod tests {
         let input = "=+-*/<>!,;(){}[]";
 
         let expected = vec![
-            token!(ASSIGN, 1, 1),
-            token!(PLUS, 1, 2),
-            token!(MINUS, 1, 3),
-            token!(MUL, 1, 4),
-            token!(DIV, 1, 5),
-            token!(LT, 1, 6),
-            token!(GT, 1, 7),
-            token!(NOT, 1, 8),
-            token!(COMMA, 1, 9),
-            token!(SEMICOLON, 1, 10),
-            token!(LPAREN, 1, 11),
-            token!(RPAREN, 1, 12),
-            token!(LBRACE, 1, 13),
-            token!(RBRACE, 1, 14),
-            token!(LBRACKET, 1, 15),
-            token!(RBRACKET, 1, 16),
+            token!(TokenKind::Assign, 1, 1),
+            token!(TokenKind::Plus, 1, 2),
+            token!(TokenKind::Minus, 1, 3),
+            token!(TokenKind::Multiplication, 1, 4),
+            token!(TokenKind::Division, 1, 5),
+            token!(TokenKind::LessThan, 1, 6),
+            token!(TokenKind::GreaterThan, 1, 7),
+            token!(TokenKind::Not, 1, 8),
+            token!(TokenKind::Comma, 1, 9),
+            token!(TokenKind::Semicolon, 1, 10),
+            token!(TokenKind::LeftParenthesis, 1, 11),
+            token!(TokenKind::RightParenthesis, 1, 12),
+            token!(TokenKind::LeftBrace, 1, 13),
+            token!(TokenKind::RightBrace, 1, 14),
+            token!(TokenKind::LeftBracket, 1, 15),
+            token!(TokenKind::RightBracket, 1, 16),
         ];
 
         test(input, &expected);
@@ -377,12 +378,12 @@ mod tests {
         let input = "== != <= >= && ||";
 
         let expected = vec![
-            token!(EQ, 1, 1),
-            token!(NE, 1, 4),
-            token!(LE, 1, 7),
-            token!(GE, 1, 10),
-            token!(AND, 1, 13),
-            token!(OR, 1, 16),
+            token!(TokenKind::Equal, 1, 1),
+            token!(TokenKind::NotEqual, 1, 4),
+            token!(TokenKind::LessThanOrEqual, 1, 7),
+            token!(TokenKind::GreaterThanOrEqual, 1, 10),
+            token!(TokenKind::And, 1, 13),
+            token!(TokenKind::Or, 1, 16),
         ];
 
         test(input, &expected);
@@ -393,9 +394,9 @@ mod tests {
         let input = "five ten add";
 
         let expected = vec![
-            token!(IDENTIFIER("five".to_string()), 1, 1),
-            token!(IDENTIFIER("ten".to_string()), 1, 6),
-            token!(IDENTIFIER("add".to_string()), 1, 10),
+            token!(TokenKind::Identifier("five".to_string()), 1, 1),
+            token!(TokenKind::Identifier("ten".to_string()), 1, 6),
+            token!(TokenKind::Identifier("add".to_string()), 1, 10),
         ];
 
         test(input, &expected);
@@ -406,13 +407,13 @@ mod tests {
         let input = "fn let true false if else return";
 
         let expected = vec![
-            token!(FUNCTION, 1, 1),
-            token!(LET, 1, 4),
-            token!(TRUE, 1, 8),
-            token!(FALSE, 1, 13),
-            token!(IF, 1, 19),
-            token!(ELSE, 1, 22),
-            token!(RETURN, 1, 27),
+            token!(TokenKind::Function, 1, 1),
+            token!(TokenKind::Let, 1, 4),
+            token!(TokenKind::True, 1, 8),
+            token!(TokenKind::False, 1, 13),
+            token!(TokenKind::If, 1, 19),
+            token!(TokenKind::Else, 1, 22),
+            token!(TokenKind::Return, 1, 27),
         ];
 
         test(input, &expected);
@@ -423,10 +424,10 @@ mod tests {
         let input = "5 10 100 9999";
 
         let expected = vec![
-            token!(INTEGER(5), 1, 1),
-            token!(INTEGER(10), 1, 3),
-            token!(INTEGER(100), 1, 6),
-            token!(INTEGER(9999), 1, 10),
+            token!(TokenKind::Integer(5), 1, 1),
+            token!(TokenKind::Integer(10), 1, 3),
+            token!(TokenKind::Integer(100), 1, 6),
+            token!(TokenKind::Integer(9999), 1, 10),
         ];
 
         test(input, &expected);
@@ -437,8 +438,8 @@ mod tests {
         let input = "\"hello\" \"world\"";
 
         let expected = vec![
-            token!(STRING("hello".to_string()), 1, 1),
-            token!(STRING("world".to_string()), 1, 9),
+            token!(TokenKind::String("hello".to_string()), 1, 1),
+            token!(TokenKind::String("world".to_string()), 1, 9),
         ];
 
         test(input, &expected);
@@ -450,15 +451,15 @@ mod tests {
 
         let expected = vec![
             vec![
-                Ok(token!(LET, 1, 1)),
-                Ok(token!(IDENTIFIER("a".to_string()), 1, 5)),
-                Ok(token!(ASSIGN, 1, 7)),
-                Err(error!(InvalidTokenError, "%", 1, 9)),
+                Ok(token!(TokenKind::Let, 1, 1)),
+                Ok(token!(TokenKind::Identifier("a".to_string()), 1, 5)),
+                Ok(token!(TokenKind::Assign, 1, 7)),
+                Err(error!(LexerError::InvalidToken, "%", 1, 9)),
             ],
             vec![
-                Ok(token!(IDENTIFIER("x".to_string()), 1, 1)),
-                Ok(token!(ASSIGN, 1, 3)),
-                Err(error!(InvalidTokenError, "`", 1, 5)),
+                Ok(token!(TokenKind::Identifier("x".to_string()), 1, 1)),
+                Ok(token!(TokenKind::Assign, 1, 3)),
+                Err(error!(LexerError::InvalidToken, "`", 1, 5)),
             ],
         ];
 
@@ -471,14 +472,14 @@ mod tests {
 
         let expected = vec![
             vec![
-                Ok(token!(FALSE, 1, 1)),
-                Err(error!(InvalidTokenSequenceError, "&|", 1, 7)),
+                Ok(token!(TokenKind::False, 1, 1)),
+                Err(error!(LexerError::InvalidTokenSequence, "&|", 1, 7)),
             ],
             vec![
-                Ok(token!(LET, 1, 1)),
-                Ok(token!(IDENTIFIER("a".to_string()), 1, 5)),
-                Ok(token!(ASSIGN, 1, 7)),
-                Err(error!(InvalidTokenSequenceError, "|-", 1, 9)),
+                Ok(token!(TokenKind::Let, 1, 1)),
+                Ok(token!(TokenKind::Identifier("a".to_string()), 1, 5)),
+                Ok(token!(TokenKind::Assign, 1, 7)),
+                Err(error!(LexerError::InvalidTokenSequence, "|-", 1, 9)),
             ],
         ];
 

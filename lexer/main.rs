@@ -22,7 +22,7 @@ fn main() {
             let tok = lexer.next_token();
             match tok {
                 Ok(tok) => match tok.kind {
-                    TokenKind::EOF => break,
+                    TokenKind::Eof => break,
                     kind => println!("{:?}", kind),
                 },
                 Err(e) => {

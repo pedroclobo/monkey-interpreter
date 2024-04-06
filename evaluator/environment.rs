@@ -34,6 +34,17 @@ impl Environment {
                 },
             }),
         );
+        store.insert(
+            "puts".to_string(),
+            Rc::new(Symbol::BuiltInFunction {
+                function: |args| {
+                    for arg in args {
+                        println!("{}", arg);
+                    }
+                    Ok(Rc::new(Symbol::Null))
+                },
+            }),
+        );
 
         Environment { store, outer: None }
     }

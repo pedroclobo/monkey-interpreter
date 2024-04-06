@@ -288,6 +288,9 @@ fn apply_function(
 
             Ok(Rc::clone(&(unwrap_return_value(evaluated)?)))
         }
+        Symbol::BuiltInFunction { function } => Ok(function(
+            arguments.iter().map(Rc::clone).collect::<Vec<Rc<Symbol>>>(),
+        )),
         _ => Err(EvaluatorError::InvalidFunction),
     }
 }
@@ -546,6 +549,15 @@ mod tests {
             Symbol::Integer(1),
             Symbol::Integer(2),
         ];
+
+        test(&input, &expected);
+    }
+
+    #[test]
+    fn len() {
+        let input = vec!["len([1, 2, 3])", "len(\"abcde\")"];
+
+        let expected = vec![Symbol::Integer(3), Symbol::Integer(5)];
 
         test(&input, &expected);
     }

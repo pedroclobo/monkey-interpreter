@@ -19,6 +19,9 @@ pub enum Symbol {
     Array {
         elements: Vec<Rc<Symbol>>,
     },
+    BuiltInFunction {
+        function: fn(Vec<Rc<Symbol>>) -> Rc<Symbol>,
+    },
 }
 
 impl std::fmt::Display for Symbol {
@@ -54,6 +57,9 @@ impl std::fmt::Display for Symbol {
                         .collect::<Vec<String>>()
                         .join(", ")
                 )
+            }
+            Symbol::BuiltInFunction { function: _ } => {
+                write!(f, "Built-in function")
             }
         }
     }

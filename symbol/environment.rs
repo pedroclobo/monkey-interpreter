@@ -12,10 +12,29 @@ pub struct Environment {
 
 impl Environment {
     pub fn new() -> Self {
-        Environment {
-            store: HashMap::new(),
-            outer: None,
-        }
+        let mut store = HashMap::new();
+        store.insert(
+            "len".to_string(),
+            Rc::new(Symbol::BuiltInFunction {
+                function: |args| {
+                    if args.len() != 1 {
+                        return Rc::new(Symbol::Integer(0));
+                    }
+
+                    match &*args[0] {
+                        Symbol::StringLiteral(value) => {
+                            Rc::new(Symbol::Integer(value.len() as i32))
+                        }
+                        Symbol::Array { elements } => {
+                            Rc::new(Symbol::Integer(elements.len() as i32))
+                        }
+                        _ => Rc::new(Symbol::Integer(0)),
+                    }
+                },
+            }),
+        );
+
+        Environment { store, outer: None }
     }
 
     pub fn new_enclosed(outer: Rc<RefCell<Environment>>) -> Self {

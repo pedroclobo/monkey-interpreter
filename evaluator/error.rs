@@ -9,6 +9,8 @@ pub enum EvaluatorError {
     InvalidInfixExpression(TokenKind, Location),
     OutOfBounds,
     InvalidArray,
+    WrongArgumentCount(u8, u8),
+    InvalidArgumentType,
 }
 
 impl std::fmt::Display for EvaluatorError {
@@ -27,6 +29,14 @@ impl std::fmt::Display for EvaluatorError {
             }
             EvaluatorError::OutOfBounds => write!(f, "Out of bounds"),
             EvaluatorError::InvalidArray => write!(f, "Invalid array"),
+            EvaluatorError::WrongArgumentCount(expected, actual) => {
+                write!(
+                    f,
+                    "Wrong argument count: expected {}, got {}",
+                    expected, actual
+                )
+            }
+            EvaluatorError::InvalidArgumentType => write!(f, "Invalid argument type"),
         }
     }
 }

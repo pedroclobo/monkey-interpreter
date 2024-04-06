@@ -3,6 +3,7 @@ use std::collections::HashMap;
 use std::rc::Rc;
 
 use crate::symbol::Symbol;
+use crate::EvaluatorError;
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct Environment {
@@ -18,17 +19,17 @@ impl Environment {
             Rc::new(Symbol::BuiltInFunction {
                 function: |args| {
                     if args.len() != 1 {
-                        return Rc::new(Symbol::Integer(0));
+                        return Err(EvaluatorError::WrongArgumentCount(1, args.len() as u8));
                     }
 
                     match &*args[0] {
                         Symbol::StringLiteral(value) => {
-                            Rc::new(Symbol::Integer(value.len() as i32))
+                            Ok(Rc::new(Symbol::Integer(value.len() as i32)))
                         }
                         Symbol::Array { elements } => {
-                            Rc::new(Symbol::Integer(elements.len() as i32))
+                            Ok(Rc::new(Symbol::Integer(elements.len() as i32)))
                         }
-                        _ => Rc::new(Symbol::Integer(0)),
+                        _ => Err(EvaluatorError::InvalidArgumentType),
                     }
                 },
             }),

@@ -3,6 +3,8 @@ use parser::ast;
 
 use std::rc::Rc;
 
+use crate::EvaluatorError;
+
 #[derive(Debug, PartialEq, Clone)]
 pub enum Symbol {
     Integer(i32),
@@ -18,7 +20,7 @@ pub enum Symbol {
         elements: Vec<Rc<Symbol>>,
     },
     BuiltInFunction {
-        function: fn(Vec<Rc<Symbol>>) -> Rc<Symbol>,
+        function: fn(Vec<Rc<Symbol>>) -> Result<Rc<Symbol>, EvaluatorError>,
     },
 }
 

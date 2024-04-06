@@ -293,7 +293,7 @@ fn apply_function(
         }
         Symbol::BuiltInFunction { function } => Ok(function(
             arguments.iter().map(Rc::clone).collect::<Vec<Rc<Symbol>>>(),
-        )),
+        )?),
         _ => Err(EvaluatorError::InvalidFunction),
     }
 }

@@ -19,4 +19,3 @@ path = "interpreter.rs"
 [dependencies]
 monkey-lexer = { path = "../lexer" }
 monkey-parser = { path = "../parser" }
-monkey-symbol = { path = "../symbol" }

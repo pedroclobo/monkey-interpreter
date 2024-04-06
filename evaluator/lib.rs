@@ -1,12 +1,15 @@
 extern crate lexer;
 extern crate parser;
-extern crate symbol;
 
 use lexer::{Token, TokenKind};
 use parser::ast::{self, Block};
 use parser::ast::{Expression, Node, Statement};
-use symbol::environment::Environment;
+
+pub mod symbol;
 use symbol::Symbol;
+
+pub mod environment;
+use environment::Environment;
 
 pub mod error;
 pub use error::EvaluatorError;

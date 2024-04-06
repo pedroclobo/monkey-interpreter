@@ -1,14 +1,13 @@
 extern crate evaluator;
 extern crate lexer;
 extern crate parser;
-extern crate symbol;
 
+use evaluator::environment::Environment;
 use evaluator::eval;
 use lexer::Lexer;
 use parser::{ast, Parser};
 use std::cell::RefCell;
 use std::rc::Rc;
-use symbol::environment::Environment;
 
 use std::io::Write;
 

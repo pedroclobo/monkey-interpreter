@@ -455,8 +455,6 @@ impl<'a, 'b> Parser<'a, 'b> {
 
 #[cfg(test)]
 mod tests {
-    use std::process::ExitCode;
-
     use Lexer;
     use Parser;
 

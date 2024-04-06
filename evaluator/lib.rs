@@ -2,51 +2,19 @@ extern crate lexer;
 extern crate parser;
 extern crate symbol;
 
-use lexer::{Location, Token, TokenKind};
+use lexer::{Token, TokenKind};
 use parser::ast::{self, Block};
 use parser::ast::{Expression, Node, Statement};
 use symbol::environment::Environment;
 use symbol::Symbol;
 
+pub mod error;
+pub use error::EvaluatorError;
+
 use std::cell::RefCell;
 use std::rc::Rc;
 
 type Env = Rc<RefCell<Environment>>;
-
-#[derive(Debug)]
-pub enum EvaluatorError {
-    InvalidIndentifierError(String),
-    InvalidPrefixExpressionError(Option<TokenKind>, Location),
-    InvalidConditionError,
-    InvalidFunctionError,
-    InvalidInfixExpressionError(Option<TokenKind>, Location),
-    OutOfBoundsError,
-    InvalidArrayError,
-}
-
-impl std::fmt::Display for EvaluatorError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        use EvaluatorError::*;
-
-        match self {
-            InvalidIndentifierError(identifier) => {
-                write!(f, "Identifier not found: {}", identifier)
-            }
-            InvalidPrefixExpressionError(token, location) => match token {
-                Some(token) => write!(f, "{} - invalid prefix expression: {}", location, token),
-                None => write!(f, "{} - invalid prefix expression", location),
-            },
-            InvalidConditionError => write!(f, "Invalid condition"),
-            InvalidFunctionError => write!(f, "Invalid function"),
-            InvalidInfixExpressionError(token, location) => match token {
-                Some(token) => write!(f, "{} - invalid infix expression: {}", location, token),
-                None => write!(f, "{} - invalid infix expression", location),
-            },
-            OutOfBoundsError => write!(f, "Out of bounds"),
-            InvalidArrayError => write!(f, "Invalid array"),
-        }
-    }
-}
 
 pub fn eval(node: Node, env: &Env) -> Result<Rc<Symbol>, EvaluatorError> {
     match node {
@@ -80,7 +48,7 @@ fn eval_expression(expression: Expression, env: &Env) -> Result<Rc<Symbol>, Eval
     match expression {
         Expression::Identifier(ast::Identifier { value }) => match env.borrow().get(&value) {
             Some(value) => Ok(Rc::clone(&value)),
-            None => Err(EvaluatorError::InvalidIndentifierError(value)),
+            None => Err(EvaluatorError::InvalidIndentifier(value)),
         },
         Expression::IntegerLiteral { value } => Ok(Rc::from(Symbol::Integer(value))),
         Expression::BooleanLiteral { value } => Ok(Rc::from(Symbol::Boolean(value))),
@@ -114,7 +82,7 @@ fn eval_expression(expression: Expression, env: &Env) -> Result<Rc<Symbol>, Eval
                     Some(alternative) => Ok(eval_block(alternative, env)?),
                     None => Ok(Rc::from(Symbol::Null)),
                 },
-                _ => Err(EvaluatorError::InvalidConditionError),
+                _ => Err(EvaluatorError::InvalidCondition),
             }
         }
         Expression::FunctionCall {
@@ -141,11 +109,11 @@ fn eval_expression(expression: Expression, env: &Env) -> Result<Rc<Symbol>, Eval
                 if let Some(element) = elements.get(index as usize) {
                     return Ok(Rc::clone(element));
                 } else {
-                    return Err(EvaluatorError::OutOfBoundsError);
+                    return Err(EvaluatorError::OutOfBounds);
                 }
             }
 
-            Err(EvaluatorError::InvalidArrayError)
+            Err(EvaluatorError::InvalidArray)
         }
     }
 }
@@ -179,19 +147,19 @@ fn eval_prefix_expression(operator: Token, symbol: &Symbol) -> Result<Rc<Symbol>
     match operator.kind {
         TokenKind::Minus => match symbol {
             Symbol::Integer(value) => Ok(Rc::from(Symbol::Integer(-value))),
-            _ => Err(EvaluatorError::InvalidPrefixExpressionError(
+            _ => Err(EvaluatorError::InvalidPrefixExpression(
                 Some(TokenKind::Minus),
                 operator.location,
             )),
         },
         TokenKind::Not => match symbol {
             Symbol::Boolean(value) => Ok(Rc::from(Symbol::Boolean(!value))),
-            _ => Err(EvaluatorError::InvalidPrefixExpressionError(
+            _ => Err(EvaluatorError::InvalidPrefixExpression(
                 Some(TokenKind::Not),
                 operator.location,
             )),
         },
-        kind => Err(EvaluatorError::InvalidPrefixExpressionError(
+        kind => Err(EvaluatorError::InvalidPrefixExpression(
             Some(kind),
             operator.location,
         )),
@@ -209,56 +177,56 @@ fn eval_infix_expression(
             (Symbol::StringLiteral(ls), Symbol::StringLiteral(rs)) => {
                 Ok(Rc::from(Symbol::StringLiteral(ls.to_owned() + rs)))
             }
-            _ => Err(EvaluatorError::InvalidInfixExpressionError(
+            _ => Err(EvaluatorError::InvalidInfixExpression(
                 Some(TokenKind::Plus),
                 operator.location,
             )),
         },
         TokenKind::Minus => match (left, right) {
             (Symbol::Integer(li), Symbol::Integer(ri)) => Ok(Rc::from(Symbol::Integer(li - ri))),
-            _ => Err(EvaluatorError::InvalidInfixExpressionError(
+            _ => Err(EvaluatorError::InvalidInfixExpression(
                 Some(TokenKind::Minus),
                 operator.location,
             )),
         },
         TokenKind::Multiplication => match (left, right) {
             (Symbol::Integer(li), Symbol::Integer(ri)) => Ok(Rc::from(Symbol::Integer(li * ri))),
-            _ => Err(EvaluatorError::InvalidInfixExpressionError(
+            _ => Err(EvaluatorError::InvalidInfixExpression(
                 Some(TokenKind::Multiplication),
                 operator.location,
             )),
         },
         TokenKind::Division => match (left, right) {
             (Symbol::Integer(li), Symbol::Integer(ri)) => Ok(Rc::from(Symbol::Integer(li / ri))),
-            _ => Err(EvaluatorError::InvalidInfixExpressionError(
+            _ => Err(EvaluatorError::InvalidInfixExpression(
                 Some(TokenKind::Division),
                 operator.location,
             )),
         },
         TokenKind::LessThan => match (left, right) {
             (Symbol::Integer(li), Symbol::Integer(ri)) => Ok(Rc::from(Symbol::Boolean(li < ri))),
-            _ => Err(EvaluatorError::InvalidInfixExpressionError(
+            _ => Err(EvaluatorError::InvalidInfixExpression(
                 Some(TokenKind::LessThan),
                 operator.location,
             )),
         },
         TokenKind::GreaterThan => match (left, right) {
             (Symbol::Integer(li), Symbol::Integer(ri)) => Ok(Rc::from(Symbol::Boolean(li > ri))),
-            _ => Err(EvaluatorError::InvalidInfixExpressionError(
+            _ => Err(EvaluatorError::InvalidInfixExpression(
                 Some(TokenKind::GreaterThan),
                 operator.location,
             )),
         },
         TokenKind::LessThanOrEqual => match (left, right) {
             (Symbol::Integer(li), Symbol::Integer(ri)) => Ok(Rc::from(Symbol::Boolean(li <= ri))),
-            _ => Err(EvaluatorError::InvalidInfixExpressionError(
+            _ => Err(EvaluatorError::InvalidInfixExpression(
                 Some(TokenKind::LessThanOrEqual),
                 operator.location,
             )),
         },
         TokenKind::GreaterThanOrEqual => match (left, right) {
             (Symbol::Integer(li), Symbol::Integer(ri)) => Ok(Rc::from(Symbol::Boolean(li >= ri))),
-            _ => Err(EvaluatorError::InvalidInfixExpressionError(
+            _ => Err(EvaluatorError::InvalidInfixExpression(
                 Some(TokenKind::GreaterThanOrEqual),
                 operator.location,
             )),
@@ -267,7 +235,7 @@ fn eval_infix_expression(
             (Symbol::Integer(li), Symbol::Integer(ri)) => Ok(Rc::from(Symbol::Boolean(li == ri))),
             (Symbol::Boolean(lb), Symbol::Boolean(rb)) => Ok(Rc::from(Symbol::Boolean(lb == rb))),
 
-            _ => Err(EvaluatorError::InvalidInfixExpressionError(
+            _ => Err(EvaluatorError::InvalidInfixExpression(
                 Some(TokenKind::Equal),
                 operator.location,
             )),
@@ -276,26 +244,26 @@ fn eval_infix_expression(
             (Symbol::Integer(li), Symbol::Integer(ri)) => Ok(Rc::from(Symbol::Boolean(li != ri))),
             (Symbol::Boolean(lb), Symbol::Boolean(rb)) => Ok(Rc::from(Symbol::Boolean(lb != rb))),
 
-            _ => Err(EvaluatorError::InvalidInfixExpressionError(
+            _ => Err(EvaluatorError::InvalidInfixExpression(
                 Some(TokenKind::NotEqual),
                 operator.location,
             )),
         },
         TokenKind::And => match (left, right) {
             (Symbol::Boolean(lb), Symbol::Boolean(rb)) => Ok(Rc::from(Symbol::Boolean(*lb && *rb))),
-            _ => Err(EvaluatorError::InvalidInfixExpressionError(
+            _ => Err(EvaluatorError::InvalidInfixExpression(
                 Some(TokenKind::And),
                 operator.location,
             )),
         },
         TokenKind::Or => match (left, right) {
             (Symbol::Boolean(lb), Symbol::Boolean(rb)) => Ok(Rc::from(Symbol::Boolean(*lb || *rb))),
-            _ => Err(EvaluatorError::InvalidInfixExpressionError(
+            _ => Err(EvaluatorError::InvalidInfixExpression(
                 Some(TokenKind::Or),
                 operator.location,
             )),
         },
-        kind => Err(EvaluatorError::InvalidInfixExpressionError(
+        kind => Err(EvaluatorError::InvalidInfixExpression(
             Some(kind),
             operator.location,
         )),
@@ -321,7 +289,7 @@ fn apply_function(
 
             Ok(Rc::clone(&(unwrap_return_value(evaluated)?)))
         }
-        _ => Err(EvaluatorError::InvalidFunctionError),
+        _ => Err(EvaluatorError::InvalidFunction),
     }
 }
 
@@ -335,13 +303,9 @@ fn unwrap_return_value(symbol: Rc<Symbol>) -> Result<Rc<Symbol>, EvaluatorError>
 
 #[cfg(test)]
 mod tests {
-    use ast::Node;
-    use eval;
+    use super::*;
     use lexer::Lexer;
     use parser::Parser;
-    use symbol::{environment::Environment, Symbol};
-    use Rc;
-    use RefCell;
 
     fn test(input: &[&str], expected: &[Symbol]) {
         for (i, symbol) in expected.iter().enumerate() {
@@ -543,20 +507,20 @@ mod tests {
     fn recursive_functions() {
         let input = vec![
             "let fib = fn(x) {
-				if (x <= 1) {
-					x
-				} else {
-					fib(x - 1) + fib(x - 2);
-				}
-			};
+                if (x <= 1) {
+                    x
+                } else {
+                    fib(x - 1) + fib(x - 2);
+                }
+            };
             fib(10);",
             "let factorial = fn(x) {
-				if (x == 0) {
-					1
-				} else {
-					x * factorial(x - 1);
-				}
-			};
+                if (x == 0) {
+                    1
+                } else {
+                    x * factorial(x - 1);
+                }
+            };
             factorial(5);",
         ];
         let expected = vec![Symbol::Integer(55), Symbol::Integer(120)];
